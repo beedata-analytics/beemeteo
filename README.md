@@ -6,4 +6,4 @@
 [![Python version](https://img.shields.io/badge/python-3.7-blue)](https://img.shields.io/badge/python-3.7-blue)
 [![Python version](https://img.shields.io/badge/python-3.8-blue)](https://img.shields.io/badge/python-3.8-blue)
 
-Python library to download weather data.
+A python package to download weather data
