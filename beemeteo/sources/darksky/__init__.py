@@ -1,12 +1,15 @@
 import forecastio
+import pandas as pd
 import pytz
 
+from beemeteo.sources import Source
 
-class DarkSky:
+
+class DarkSky(Source):
     def __init__(self, api_key):
         self.api_key = api_key
 
-    def hourly_forecast(self, latitude, longitude, timezone, day):
+    def get_data(self, latitude, longitude, timezone, day):
         """
         Gets 24 hours of forecast from darksky
 
@@ -27,4 +30,4 @@ class DarkSky:
             d = item.d
             d.update({"time": pytz.UTC.localize(item.time).astimezone(timezone)})
             hourly.append(d)
-        return hourly
+        return pd.DataFrame.from_dict(hourly)

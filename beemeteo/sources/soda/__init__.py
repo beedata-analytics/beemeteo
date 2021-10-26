@@ -6,6 +6,8 @@ import pytz
 import requests
 from dateutil.relativedelta import relativedelta
 
+from beemeteo.sources import Source
+
 VERSION = "1.0.0"
 SODA_SERVER_SERVICE = "http://www.soda-is.com/service/wps"
 SODA_SERVER_MIRROR_SERVICE = "http://pro.soda-is.com/service/wps"
@@ -19,12 +21,12 @@ def to_tz(ts, timezone):
     )
 
 
-class SODA:
+class SODA(Source):
     def __init__(self, cams_registered_mails):
         self.cams_registered_mails = cams_registered_mails
         assert len(self.cams_registered_mails) > 0
 
-    def solar_radiation(self, latitude, longitude, timezone, day):
+    def get_data(self, latitude, longitude, timezone, day):
         """
         Gets solar radiation information for a location on a given day
 
@@ -130,4 +132,7 @@ class SODA:
 
         data = io.StringIO(response.text.split("#")[-1])
         df = pd.read_csv(data, delimiter=";")
+        time_column_name = " Observation period"
+        df[time_column_name] = pd.to_datetime(df[time_column_name].str[:19])
+        df = df.rename({time_column_name: 'time'}, axis=1)
         return df
