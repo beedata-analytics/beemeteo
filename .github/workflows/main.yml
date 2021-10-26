@@ -22,5 +22,8 @@ jobs:
         shell: bash
         run: python -m poetry install
       - name: Test with pytest
+        env:
+          DARKSKY_API_KEY: ${{ secrets.DARKSKY_API_KEY }}
+          SODA_USERNAME: ${{ secrets.SODA_USERNAME }}
         run: |
           python -m poetry run python -m pytest -v tests        

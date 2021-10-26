@@ -17,10 +17,14 @@ class DarkSky:
         """
 
         hourly = []
-        for item in forecastio.load_forecast(self.api_key, latitude, longitude, time=day, units="si").hourly().data:
+        for item in (
+            forecastio.load_forecast(
+                self.api_key, latitude, longitude, time=day, units="si"
+            )
+            .hourly()
+            .data
+        ):
             d = item.d
-            d.update({
-                'time': pytz.UTC.localize(item.time).astimezone(timezone)
-            })
+            d.update({"time": pytz.UTC.localize(item.time).astimezone(timezone)})
             hourly.append(d)
         return hourly

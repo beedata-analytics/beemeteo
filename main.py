@@ -1,13 +1,11 @@
-import click
-import json
-import pytz
-
 import datetime as dt
-
-from beemeteo.darksky import DarkSky
-
+import json
 import logging
 
+import click
+import pytz
+
+from beemeteo.darksky import DarkSky
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,7 +22,9 @@ def main(name):
 
     config = json.load(name)
     darksky = DarkSky(config["darksky"]["api_key"])
-    hourly_forecast = darksky.hourly_forecast(41.29, 2.19, pytz.UTC, dt.datetime(2021, 9, 1))
+    hourly_forecast = darksky.hourly_forecast(
+        41.29, 2.19, pytz.UTC, dt.datetime(2021, 9, 1)
+    )
     pass
 
 
