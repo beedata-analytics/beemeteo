@@ -29,7 +29,7 @@ def darksky(name):
 
     config = json.load(name)
     data = DarkSky(config["darksky"]["api_key"]).get_data(
-        41.29, 2.19, pytz.UTC, dt.datetime(2021, 9, 1)
+        41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
     )
     _print(data)
 
@@ -45,7 +45,7 @@ def soda(name):
 
     config = json.load(name)
     data = SODA(config["soda"]["registered_emails"]).get_data(
-        41.29, 2.19, pytz.UTC, dt.datetime(2021, 9, 1)
+        41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
     )
     _print(data)
 

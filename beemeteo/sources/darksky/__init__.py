@@ -22,12 +22,16 @@ class DarkSky(Source):
         hourly = []
         for item in (
             forecastio.load_forecast(
-                self.api_key, latitude, longitude, time=day, units="si"
+                self.api_key,
+                latitude,
+                longitude,
+                time=timezone.localize(day),
+                units="si",
             )
             .hourly()
             .data
         ):
             d = item.d
-            d.update({"time": pytz.UTC.localize(item.time).astimezone(timezone)})
+            d.update({"time": pytz.UTC.localize(item.time)})
             hourly.append(d)
         return pd.DataFrame.from_dict(hourly)
