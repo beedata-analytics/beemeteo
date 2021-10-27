@@ -3,10 +3,16 @@ import os
 
 import pytz
 
-from beemeteo.soda import SODA
+from beemeteo.sources.soda import SODA
 
 
 def test_soda():
     username = os.environ.get("SODA_USERNAME")
-    soda = SODA([username])
-    soda.solar_radiation(41.29, 2.19, pytz.UTC, dt.datetime(2021, 1, 1))
+    source = SODA({
+        "soda": {
+            "cams_registered_mails": [
+                username
+            ]
+        }
+    })
+    source.get_data(41.29, 2.19, pytz.UTC, dt.datetime(2021, 1, 1))

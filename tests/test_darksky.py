@@ -3,10 +3,14 @@ import os
 
 import pytz
 
-from beemeteo.darksky import DarkSky
+from beemeteo.sources.darksky import DarkSky
 
 
 def test_darksky():
-    API_KEY = os.environ.get("DARKSKY_API_KEY")
-    darksky = DarkSky(API_KEY)
-    darksky.hourly_forecast(41.29, 2.19, pytz.UTC, dt.datetime(2021, 9, 1))
+    api_key = os.environ.get("DARKSKY_API_KEY")
+    source = DarkSky({
+        "darksky": {
+            "api_key": api_key
+        }
+    })
+    source.get_data(41.29, 2.19, pytz.UTC, dt.datetime(2021, 9, 1))

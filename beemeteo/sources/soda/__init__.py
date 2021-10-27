@@ -6,27 +6,23 @@ import pytz
 import requests
 from dateutil.relativedelta import relativedelta
 
+from beemeteo.sources import Source, to_tz
+
 VERSION = "1.0.0"
 SODA_SERVER_SERVICE = "http://www.soda-is.com/service/wps"
 SODA_SERVER_MIRROR_SERVICE = "http://pro.soda-is.com/service/wps"
 
 
-def to_tz(ts, timezone):
-    return (
-        ts.astimezone(pytz.UTC)
-        if ts.tzinfo is not None
-        else timezone.localize(ts).astimezone(pytz.UTC)
-    )
-
-
-class SODA:
-    def __init__(self, cams_registered_mails):
-        self.cams_registered_mails = cams_registered_mails
+class SODA(Source):
+    def __init__(self, config):
+        super(SODA, self).__init__(config)
+        self.cams_registered_mails = self.config["soda"]["cams_registered_mails"]
         assert len(self.cams_registered_mails) > 0
 
-    def solar_radiation(self, latitude, longitude, timezone, day):
+    def get_data(self, latitude, longitude, timezone, day):
         """
         Gets solar radiation information for a location on a given day
+        http://www.soda-pro.com/web-services/radiation/cams-radiation-service/info
 
         :param float latitude: longitude
         :param float longitude: latitude
@@ -95,31 +91,22 @@ class SODA:
         time_ref="UT",
         summarization="PT01H",
     ):
-        try:
-            response = self._request_server(
-                SODA_SERVER_SERVICE,
-                username,
-                latitude,
-                longitude,
-                date_begin,
-                date_end,
-                altitude,
-                time_ref,
-                summarization,
-            )
-        except Exception:
-            response = self._request_server(
-                SODA_SERVER_MIRROR_SERVICE,
-                username,
-                latitude,
-                longitude,
-                date_begin,
-                date_end,
-                altitude,
-                time_ref,
-                summarization,
-            )
-        return response
+        for service in [SODA_SERVER_SERVICE, SODA_SERVER_MIRROR_SERVICE]:
+            try:
+                response = self._request_server(
+                    service,
+                    username,
+                    latitude,
+                    longitude,
+                    date_begin,
+                    date_end,
+                    altitude,
+                    time_ref,
+                    summarization,
+                )
+                return response
+            except Exception:
+                pass
 
     @staticmethod
     def _parse_request(response):
@@ -130,4 +117,9 @@ class SODA:
 
         data = io.StringIO(response.text.split("#")[-1])
         df = pd.read_csv(data, delimiter=";")
+        time_column_name = " Observation period"
+        df[time_column_name] = pd.to_datetime(df[time_column_name].str[:19]).dt.tz_localize(
+            pytz.UTC
+        )
+        df = df.rename({time_column_name: "time"}, axis=1)
         return df
