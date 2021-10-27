@@ -6,8 +6,9 @@ from beemeteo.sources import Source
 
 
 class DarkSky(Source):
-    def __init__(self, api_key):
-        self.api_key = api_key
+    def __init__(self, config):
+        super(DarkSky, self).__init__(config)
+        self.api_key = self.config["darksky"]["api_key"]
 
     def get_data(self, latitude, longitude, timezone, day):
         """

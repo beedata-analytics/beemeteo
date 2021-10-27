@@ -20,33 +20,41 @@ def cli():
 
 @cli.command()
 @click.argument("name", type=click.File("rb"))
-def darksky(name):
+@click.option("--hbase-table", type=str)
+def darksky(name, hbase_table):
     """
     Import forecast from darksky
 
     :param file name: configuration file
+    :param str hbase_table: HBase table name
     """
 
     config = json.load(name)
-    data = DarkSky(config["darksky"]["api_key"]).get_data(
+    source = DarkSky(config)
+    data = source.get_data(
         41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
     )
+    source.save(data, hbase_table)
     _print(data)
 
 
 @cli.command()
 @click.argument("name", type=click.File("rb"))
-def soda(name):
+@click.option("--hbase-table", type=str)
+def soda(name, hbase_table):
     """
     Import forecast from SODA
 
     :param file name: configuration file
+    :param str hbase_table: HBase table name
     """
 
     config = json.load(name)
-    data = SODA(config["soda"]["registered_emails"]).get_data(
+    source = SODA(config)
+    data = source.get_data(
         41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
     )
+    source.save(data, hbase_table)
     _print(data)
 
 
