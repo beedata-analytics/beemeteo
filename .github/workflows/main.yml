@@ -26,4 +26,4 @@ jobs:
           DARKSKY_API_KEY: ${{ secrets.DARKSKY_API_KEY }}
           SODA_USERNAME: ${{ secrets.SODA_USERNAME }}
         run: |
-          python -m poetry run python -m pytest -v tests        
+          python -m poetry run python -m pytest -v tests --cov
