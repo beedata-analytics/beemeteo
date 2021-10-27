@@ -10,7 +10,7 @@ def test_soda():
     username = os.environ.get("SODA_USERNAME")
     source = SODA({
         "soda": {
-            "registered_emails": [
+            "cams_registered_mails": [
                 username
             ]
         }
