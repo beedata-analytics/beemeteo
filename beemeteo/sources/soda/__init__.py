@@ -118,8 +118,8 @@ class SODA(Source):
         data = io.StringIO(response.text.split("#")[-1])
         df = pd.read_csv(data, delimiter=";")
         time_column_name = " Observation period"
-        df[time_column_name] = pd.to_datetime(df[time_column_name].str[:19]).dt.tz_localize(
-            pytz.UTC
-        )
+        df[time_column_name] = pd.to_datetime(
+            df[time_column_name].str[:19]
+        ).dt.tz_localize(pytz.UTC)
         df = df.rename({time_column_name: "time"}, axis=1)
         return df

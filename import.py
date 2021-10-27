@@ -7,6 +7,7 @@ import click
 import pytz
 
 from beemeteo.sources.darksky import DarkSky
+from beemeteo.sources.meteogalicia import MeteoGalicia
 from beemeteo.sources.soda import SODA
 
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +32,26 @@ def darksky(name, hbase_table):
 
     config = json.load(name)
     source = DarkSky(config)
+    data = source.get_data(
+        41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
+    )
+    source.save(data, hbase_table)
+    _print(data)
+
+
+@cli.command()
+@click.argument("name", type=click.File("rb"))
+@click.option("--hbase-table", type=str)
+def meteogalicia(name, hbase_table):
+    """
+    Import forecast from meteogalicia
+
+    :param file name: configuration file
+    :param str hbase_table: HBase table name
+    """
+
+    config = json.load(name)
+    source = MeteoGalicia(config)
     data = source.get_data(
         41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
     )

@@ -1,5 +1,6 @@
-import happybase
 import time
+
+import happybase
 
 
 class HBase:

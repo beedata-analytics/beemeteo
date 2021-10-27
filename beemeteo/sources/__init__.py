@@ -28,4 +28,6 @@ class Source:
             self.config["hbase"]["db"],
         )
         table = hbase.get_table(hbase_table, {"info": {}})
-        hbase.save(table, data.to_dict("records"), [("info", "all")], row_fields=["time"])
+        hbase.save(
+            table, data.to_dict("records"), [("info", "all")], row_fields=["time"]
+        )
