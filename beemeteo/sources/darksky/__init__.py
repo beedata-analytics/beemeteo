@@ -10,7 +10,7 @@ class DarkSky(Source):
         super(DarkSky, self).__init__(config)
         self.api_key = self.config["darksky"]["api_key"]
 
-    def get_data(self, latitude, longitude, timezone, day):
+    def _get_data(self, latitude, longitude, timezone, day):
         """
         Gets 24 hours of forecast from darksky
 

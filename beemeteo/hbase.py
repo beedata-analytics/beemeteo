@@ -1,6 +1,10 @@
+import logging
 import time
 
 import happybase
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class HBase:
@@ -26,7 +30,7 @@ class HBase:
             if str(e.__class__) == "<class 'Hbase_thrift.AlreadyExists'>":
                 pass
             else:
-                print(e)
+                logger.error(e)
         return self.connection.table(table_name)
 
     @staticmethod

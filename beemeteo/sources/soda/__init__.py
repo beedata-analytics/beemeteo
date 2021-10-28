@@ -6,7 +6,7 @@ import pytz
 import requests
 from dateutil.relativedelta import relativedelta
 
-from beemeteo.sources import Source, to_tz
+from beemeteo.sources import Source, _to_tz
 
 VERSION = "1.0.0"
 SODA_SERVER_SERVICE = "http://www.soda-is.com/service/wps"
@@ -19,7 +19,7 @@ class SODA(Source):
         self.cams_registered_mails = self.config["soda"]["cams_registered_mails"]
         assert len(self.cams_registered_mails) > 0
 
-    def get_data(self, latitude, longitude, timezone, day):
+    def _get_data(self, latitude, longitude, timezone, day):
         """
         Gets solar radiation information for a location on a given day
         http://www.soda-pro.com/web-services/radiation/cams-radiation-service/info
@@ -30,8 +30,8 @@ class SODA(Source):
         :param datetime.datetime day:
         :return:
         """
-        date_begin = to_tz(day, timezone)
-        date_end = to_tz(
+        date_begin = _to_tz(day, timezone)
+        date_end = _to_tz(
             day + relativedelta(days=1) - relativedelta(seconds=1), timezone
         )
         for mail in self.cams_registered_mails:
