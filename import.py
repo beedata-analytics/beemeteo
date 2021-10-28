@@ -1,5 +1,4 @@
 import datetime
-import datetime as dt
 import json
 import logging
 import sys
@@ -7,9 +6,10 @@ import sys
 import click
 import pytz
 
+from beemeteo.sources.cams import CAMS
 from beemeteo.sources.darksky import DarkSky
 from beemeteo.sources.meteogalicia import MeteoGalicia
-from beemeteo.sources.soda import SODA
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -99,7 +99,9 @@ def darksky(filename, latitude, longitude, timezone, date_from, date_to, hbase_t
     default=str(datetime.datetime.now().date()),
 )
 @click.option("--hbase-table", type=str)
-def meteogalicia(filename, latitude, longitude, timezone, date_from, date_to, hbase_table):
+def meteogalicia(
+    filename, latitude, longitude, timezone, date_from, date_to, hbase_table
+):
     """
     Gets raw data from meteogalicia
 
@@ -139,9 +141,9 @@ def meteogalicia(filename, latitude, longitude, timezone, date_from, date_to, hb
     default=str(datetime.datetime.now().date()),
 )
 @click.option("--hbase-table", type=str)
-def soda(filename, latitude, longitude, timezone, date_from, date_to, hbase_table):
+def cams(filename, latitude, longitude, timezone, date_from, date_to, hbase_table):
     """
-    Gets raw data from SODA
+    Gets raw data from CAMS
 
     :param file filename: configuration file
     :param float latitude: station's latitude
@@ -153,7 +155,7 @@ def soda(filename, latitude, longitude, timezone, date_from, date_to, hbase_tabl
     """
 
     get_raw_data(
-        SODA(json.load(filename)),
+        CAMS(json.load(filename)),
         latitude,
         longitude,
         timezone,
