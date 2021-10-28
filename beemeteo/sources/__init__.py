@@ -56,6 +56,7 @@ class Source:
             latitude, longitude, timezone, date_from, date_to, hbase_table
         )
         data["ts"] = _dt_to_ts(data["time"])
+        data = data.sort_values(by=["ts"])
         return data
 
     def _get_from_hbase(self, day, hbase_table):
