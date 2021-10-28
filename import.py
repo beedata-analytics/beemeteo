@@ -1,3 +1,4 @@
+import datetime
 import datetime as dt
 import json
 import logging
@@ -19,58 +20,147 @@ def cli():
     pass
 
 
+def get_raw_data(
+    source, latitude, longitude, timezone, date_from, date_to, hbase_table
+):
+    """
+    Retrieve data from source
+
+    :param source: raw data source
+    :param float latitude: station's latitude
+    :param float longitude: station's longitude
+    :param str timezone: station's timezone
+    :param datetime date_from: start date
+    :param datetime date_to: end date
+    :param str hbase_table: HBase table for source
+    :return:
+    """
+    data = source.get_data(
+        latitude, longitude, pytz.timezone(timezone), date_from, date_to, hbase_table
+    )
+    if hbase_table is not None:
+        source.save(data, hbase_table)
+    _print(data)
+
+
 @cli.command()
 @click.argument("filename", type=click.File("rb"))
-def darksky(filename):
+@click.argument("latitude", type=float)
+@click.argument("longitude", type=float)
+@click.argument("timezone", type=str)
+@click.argument(
+    "date_from",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(datetime.datetime.now().date()),
+)
+@click.argument(
+    "date_to",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(datetime.datetime.now().date()),
+)
+@click.option("--hbase-table", type=str)
+def darksky(filename, latitude, longitude, timezone, date_from, date_to, hbase_table):
     """
-    Import forecast from darksky
+    Gets raw data from darksky
 
     :param file filename: configuration file
+    :param float latitude: station's latitude
+    :param float longitude: station's longitude
+    :param str timezone: station's timezone
+    :param datetime date_from: start date
+    :param datetime date_to: end date
+    :param str hbase_table: HBase table for source
     """
 
-    config = json.load(filename)
-    source = DarkSky(config)
-    data = source.get_data(
-        41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
+    get_raw_data(
+        DarkSky(json.load(filename)),
+        latitude,
+        longitude,
+        timezone,
+        date_from,
+        date_to,
+        hbase_table,
     )
-    source.save(data, config["darksky"]["hbase-table"])
-    _print(data)
 
 
 @cli.command()
 @click.argument("filename", type=click.File("rb"))
-def meteogalicia(filename):
+@click.argument("latitude", type=float)
+@click.argument("longitude", type=float)
+@click.argument("timezone", type=str)
+@click.argument(
+    "date_from",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(datetime.datetime.now().date()),
+)
+@click.argument(
+    "date_to",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(datetime.datetime.now().date()),
+)
+@click.option("--hbase-table", type=str)
+def meteogalicia(filename, latitude, longitude, timezone, date_from, date_to, hbase_table):
     """
-    Import forecast from meteogalicia
-
-    :param file name: configuration file
-    """
-
-    config = json.load(filename)
-    source = MeteoGalicia(config)
-    data = source.get_data(
-        41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
-    )
-    source.save(data, config["meteogalicia"]["hbase-table"])
-    _print(data)
-
-
-@cli.command()
-@click.argument("filename", type=click.File("rb"))
-def soda(filename):
-    """
-    Import forecast from SODA
+    Gets raw data from meteogalicia
 
     :param file filename: configuration file
+    :param float latitude: station's latitude
+    :param float longitude: station's longitude
+    :param str timezone: station's timezone
+    :param datetime date_from: start date
+    :param datetime date_to: end date
+    :param str hbase_table: HBase table for source
     """
 
-    config = json.load(filename)
-    source = SODA(config)
-    data = source.get_data(
-        41.29, 2.19, pytz.timezone("Europe/Madrid"), dt.datetime(2021, 9, 1)
+    get_raw_data(
+        MeteoGalicia(json.load(filename)),
+        latitude,
+        longitude,
+        timezone,
+        date_from,
+        date_to,
+        hbase_table,
     )
-    source.save(data, config["soda"]["hbase-table"])
-    _print(data)
+
+
+@cli.command()
+@click.argument("filename", type=click.File("rb"))
+@click.argument("latitude", type=float)
+@click.argument("longitude", type=float)
+@click.argument("timezone", type=str)
+@click.argument(
+    "date_from",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(datetime.datetime.now().date()),
+)
+@click.argument(
+    "date_to",
+    type=click.DateTime(formats=["%Y-%m-%d"]),
+    default=str(datetime.datetime.now().date()),
+)
+@click.option("--hbase-table", type=str)
+def soda(filename, latitude, longitude, timezone, date_from, date_to, hbase_table):
+    """
+    Gets raw data from SODA
+
+    :param file filename: configuration file
+    :param float latitude: station's latitude
+    :param float longitude: station's longitude
+    :param str timezone: station's timezone
+    :param datetime date_from: start date
+    :param datetime date_to: end date
+    :param str hbase_table: HBase table for source
+    """
+
+    get_raw_data(
+        SODA(json.load(filename)),
+        latitude,
+        longitude,
+        timezone,
+        date_from,
+        date_to,
+        hbase_table,
+    )
 
 
 def _print(data):

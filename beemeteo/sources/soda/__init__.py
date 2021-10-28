@@ -17,6 +17,7 @@ class SODA(Source):
     def __init__(self, config):
         super(SODA, self).__init__(config)
         self.cams_registered_mails = self.config["soda"]["cams-registered-mails"]
+        self.hbase_table = self.config["soda"]["hbase-table"]
         assert len(self.cams_registered_mails) > 0
 
     def _get_data(self, latitude, longitude, timezone, day):
