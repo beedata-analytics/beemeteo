@@ -16,7 +16,7 @@ SODA_SERVER_MIRROR_SERVICE = "http://pro.soda-is.com/service/wps"
 class SODA(Source):
     def __init__(self, config):
         super(SODA, self).__init__(config)
-        self.cams_registered_mails = self.config["soda"]["cams_registered_mails"]
+        self.cams_registered_mails = self.config["soda"]["cams-registered-mails"]
         assert len(self.cams_registered_mails) > 0
 
     def _get_data(self, latitude, longitude, timezone, day):
