@@ -1,4 +1,4 @@
-import datetime as dt
+import datetime
 
 import pytz
 
@@ -11,6 +11,6 @@ def test_meteogalicia():
         41.29,
         2.19,
         pytz.timezone("Europe/Madrid"),
-        dt.datetime(2021, 9, 1),
-        dt.datetime(2021, 9, 5),
+        datetime.datetime(2021, 9, 1),
+        datetime.datetime(2021, 9, 5),
     )
