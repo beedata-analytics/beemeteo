@@ -8,9 +8,9 @@ from beemeteo.sources import Source
 class DarkSky(Source):
     def __init__(self, config):
         super(DarkSky, self).__init__(config)
-        self.api_key = self.config["darksky"]["api_key"]
+        self.api_key = self.config["darksky"]["api-key"]
 
-    def get_data(self, latitude, longitude, timezone, day):
+    def _get_data(self, latitude, longitude, timezone, day):
         """
         Gets 24 hours of forecast from darksky
 
