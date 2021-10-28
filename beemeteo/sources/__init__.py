@@ -15,7 +15,9 @@ def _to_tz(ts, timezone):
 
 
 def _dt_to_ts(dt):
-    return ((dt - pd.Timestamp("1970-01-01").tz_localize(pytz.UTC)) / pd.Timedelta("1s")).astype(int)
+    return (
+        (dt - pd.Timestamp("1970-01-01").tz_localize(pytz.UTC)) / pd.Timedelta("1s")
+    ).astype(int)
 
 
 class Source:
@@ -24,11 +26,15 @@ class Source:
 
     @property
     def hbase(self):
-        return HBase(
-            self.config["hbase"]["host"],
-            self.config["hbase"]["port"],
-            self.config["hbase"]["db"],
-        ) if "hbase" in self.config else None
+        return (
+            HBase(
+                self.config["hbase"]["host"],
+                self.config["hbase"]["port"],
+                self.config["hbase"]["db"],
+            )
+            if "hbase" in self.config
+            else None
+        )
 
     @abstractmethod
     def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
@@ -43,8 +49,12 @@ class Source:
         """
         pass
 
-    def get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
-        data = self._get_data(latitude, longitude, timezone, date_from, date_to, hbase_table)
+    def get_data(
+        self, latitude, longitude, timezone, date_from, date_to, hbase_table=None
+    ):
+        data = self._get_data(
+            latitude, longitude, timezone, date_from, date_to, hbase_table
+        )
         data["ts"] = _dt_to_ts(data["time"])
         return data
 

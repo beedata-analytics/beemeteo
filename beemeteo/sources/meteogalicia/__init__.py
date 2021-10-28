@@ -1,12 +1,14 @@
 import datetime
+import logging
+
 from io import StringIO
 
-import logging
 import pandas as pd
 import pytz
 import requests
 
 from beemeteo.sources import Source
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,16 +17,19 @@ logger = logging.getLogger(__name__)
 class MeteoGalicia(Source):
     def __init__(self, config):
         super(MeteoGalicia, self).__init__(config)
-        self.hbase_table = self.config["meteogalicia"]["hbase-table"]
 
     def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
         data = None
-        days = pd.date_range(date_from, date_to - datetime.timedelta(days=1), freq='d')
+        days = pd.date_range(date_from, date_to - datetime.timedelta(days=1), freq="d")
         for day in days:
             daily_data = self._get_from_hbase(day, hbase_table)
             if len(daily_data) < 24:
                 daily_data = self._get_data_day(latitude, longitude, timezone, day)
-                data = pd.merge(data, daily_data, how="outer") if data is not None else daily_data
+                data = (
+                    pd.merge(data, daily_data, how="outer")
+                    if data is not None
+                    else daily_data
+                )
         return data
 
     def _get_data_day(self, latitude, longitude, timezone, day):
@@ -131,7 +136,9 @@ class MeteoGalicia(Source):
                     solar_data = solar_data.rename(
                         columns={"date": "time", 'swflx[unit="W m-2"]': "GHI"}
                     )
-                    solar_data["time"] = pd.to_datetime(solar_data["time"]).dt.tz_convert(pytz.UTC)
+                    solar_data["time"] = pd.to_datetime(
+                        solar_data["time"]
+                    ).dt.tz_convert(pytz.UTC)
                     solar_data = solar_data[["time", "GHI"]]
                     solar_data = solar_data.reset_index(drop=True)
                     return solar_data[: (days_forecasted * 24)]
