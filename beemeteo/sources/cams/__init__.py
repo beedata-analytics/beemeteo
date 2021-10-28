@@ -1,25 +1,41 @@
-import datetime as dt
+import datetime
 import io
 
 import pandas as pd
 import pytz
 import requests
+
+from beemeteo.sources import Source
+from beemeteo.sources import _to_tz
 from dateutil.relativedelta import relativedelta
 
-from beemeteo.sources import Source, _to_tz
 
 VERSION = "1.0.0"
 SODA_SERVER_SERVICE = "http://www.soda-is.com/service/wps"
 SODA_SERVER_MIRROR_SERVICE = "http://pro.soda-is.com/service/wps"
 
 
-class SODA(Source):
+class CAMS(Source):
     def __init__(self, config):
-        super(SODA, self).__init__(config)
-        self.cams_registered_mails = self.config["soda"]["cams-registered-mails"]
+        super(CAMS, self).__init__(config)
+        self.cams_registered_mails = self.config["cams"]["cams-registered-mails"]
         assert len(self.cams_registered_mails) > 0
 
-    def _get_data(self, latitude, longitude, timezone, day):
+    def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
+        data = None
+        days = pd.date_range(date_from, date_to - datetime.timedelta(days=1), freq="d")
+        for day in days:
+            daily_data = self._get_from_hbase(day, hbase_table)
+            if len(daily_data) < 24:
+                daily_data = self._get_data_day(latitude, longitude, timezone, day)
+                data = (
+                    pd.merge(data, daily_data, how="outer")
+                    if data is not None
+                    else daily_data
+                )
+        return data
+
+    def _get_data_day(self, latitude, longitude, timezone, day):
         """
         Gets solar radiation information for a location on a given day
         http://www.soda-pro.com/web-services/radiation/cams-radiation-service/info
@@ -65,8 +81,8 @@ class SODA(Source):
                 latitude,
                 longitude,
                 altitude,
-                dt.datetime.strftime(date_begin, "%Y-%m-%d %H:%M:%S")[:10],
-                dt.datetime.strftime(date_end, "%Y-%m-%d %H:%M:%S")[:10],
+                datetime.datetime.strftime(date_begin, "%Y-%m-%d %H:%M:%S")[:10],
+                datetime.datetime.strftime(date_end, "%Y-%m-%d %H:%M:%S")[:10],
                 time_ref,
                 summarization,
                 username.replace("@", "%2540"),

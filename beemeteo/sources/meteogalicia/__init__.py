@@ -1,12 +1,14 @@
-from datetime import datetime
+import datetime
+import logging
+
 from io import StringIO
 
-import logging
 import pandas as pd
 import pytz
 import requests
 
 from beemeteo.sources import Source
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -16,7 +18,23 @@ class MeteoGalicia(Source):
     def __init__(self, config):
         super(MeteoGalicia, self).__init__(config)
 
-    def _get_data(self, latitude, longitude, timezone, day, run=0, days_forecasted=1):
+    def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
+        data = None
+        days = pd.date_range(date_from, date_to - datetime.timedelta(days=1), freq="d")
+        for day in days:
+            daily_data = self._get_from_hbase(day, hbase_table)
+            if len(daily_data) < 24:
+                daily_data = self._get_data_day(latitude, longitude, timezone, day)
+                data = (
+                    pd.merge(data, daily_data, how="outer")
+                    if data is not None
+                    else daily_data
+                )
+        return data
+
+    def _get_data_day(self, latitude, longitude, timezone, day):
+        run = 0
+        days_forecasted = 1
         for resolution in [(4, 2), (12, 2), (12, 1), (36, 2), (36, 1)]:
             try:
                 # Last 14 days of operational forecasts
@@ -35,7 +53,7 @@ class MeteoGalicia(Source):
                 # longitude=0.62&
                 # latitude=41.62&
                 # temporal=all
-                if (datetime.utcnow() - day).days <= 14:
+                if (datetime.datetime.utcnow() - day).days <= 14:
                     url_mg = (
                         "http://mandeo.meteogalicia.es/"
                         "thredds/"
@@ -54,9 +72,9 @@ class MeteoGalicia(Source):
                         "temporal=all"
                         % (
                             resolution[0],
-                            datetime.strftime(day, "%Y%m%d"),
+                            datetime.datetime.strftime(day, "%Y%m%d"),
                             resolution[1],
-                            datetime.strftime(day, "%Y%m%d"),
+                            datetime.datetime.strftime(day, "%Y%m%d"),
                             run,
                             longitude,
                             latitude,
@@ -99,10 +117,10 @@ class MeteoGalicia(Source):
                         "temporal=all"
                         % (
                             resolution[1],
-                            datetime.strftime(day, "%Y"),
-                            datetime.strftime(day, "%m"),
+                            datetime.datetime.strftime(day, "%Y"),
+                            datetime.datetime.strftime(day, "%m"),
                             resolution[1],
-                            datetime.strftime(day, "%Y%m%d"),
+                            datetime.datetime.strftime(day, "%Y%m%d"),
                             longitude,
                             latitude,
                         )
@@ -118,9 +136,12 @@ class MeteoGalicia(Source):
                     solar_data = solar_data.rename(
                         columns={"date": "time", 'swflx[unit="W m-2"]': "GHI"}
                     )
-                    solar_data["time"] = pd.to_datetime(solar_data["time"]).dt.tz_convert(pytz.UTC)
+                    solar_data["time"] = pd.to_datetime(
+                        solar_data["time"]
+                    ).dt.tz_convert(pytz.UTC)
                     solar_data = solar_data[["time", "GHI"]]
                     solar_data = solar_data.reset_index(drop=True)
                     return solar_data[: (days_forecasted * 24)]
             except Exception as e:
                 logger.error(e)
+        return pd.DataFrame({})
