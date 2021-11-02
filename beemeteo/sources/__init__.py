@@ -56,6 +56,8 @@ class Source:
             latitude, longitude, timezone, date_from, date_to, hbase_table
         )
         data["ts"] = _dt_to_ts(data["time"])
+        data["latitude"] = latitude
+        data["longitude"] = longitude
         data = data.sort_values(by=["ts"])
         return data
 
@@ -82,5 +84,8 @@ class Source:
         """
         table = self.hbase.get_table(hbase_table, {"info": {}})
         self.hbase.save(
-            table, data.to_dict("records"), [("info", "all")], row_fields=["time"]
+            table,
+            data.to_dict("records"),
+            [("info", "all")],
+            row_fields=["latitude", "longitude", "ts"],
         )

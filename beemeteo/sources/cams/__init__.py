@@ -1,5 +1,6 @@
 import datetime
 import io
+import logging
 
 import pandas as pd
 import pytz
@@ -9,6 +10,9 @@ from beemeteo.sources import Source
 from beemeteo.sources import _to_tz
 from dateutil.relativedelta import relativedelta
 
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 VERSION = "1.0.0"
 SODA_SERVER_SERVICE = "http://www.soda-is.com/service/wps"
@@ -28,11 +32,14 @@ class CAMS(Source):
             daily_data = self._get_from_hbase(day, hbase_table)
             if len(daily_data) < 24:
                 daily_data = self._get_data_day(latitude, longitude, timezone, day)
-                data = (
-                    pd.merge(data, daily_data, how="outer")
-                    if data is not None
-                    else daily_data
-                )
+                if daily_data is None:
+                    logger.info("[CAMS] could not retrieve info for %s" % (day))
+                else:
+                    data = (
+                        pd.merge(data, daily_data, how="outer")
+                        if data is not None
+                        else daily_data
+                    )
         return data
 
     def _get_data_day(self, latitude, longitude, timezone, day):
@@ -51,13 +58,15 @@ class CAMS(Source):
             day + relativedelta(days=1) - relativedelta(seconds=1), timezone
         )
         for mail in self.cams_registered_mails:
-            try:
-                response = self._request(
-                    mail, latitude, longitude, date_begin, date_end
+            data = self._request(mail, latitude, longitude, date_begin, date_end)
+            if data is not None:
+                logger.info("[CAMS] %s retrieved info for %s" % (mail, date_begin))
+                return data
+            else:
+                logger.info(
+                    "[CAMS] maximum number of daily requests reached for %s" % mail
                 )
-                return response
-            except Exception:
-                continue
+                self.cams_registered_mails.remove(mail)
 
     def _request_server(
         self,
