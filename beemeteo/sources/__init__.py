@@ -16,7 +16,8 @@ def _to_tz(ts, timezone):
 
 def _dt_to_ts(dt):
     return (
-        (dt - pd.Timestamp("1970-01-01").tz_localize(pytz.UTC)) / pd.Timedelta("1s")
+        (dt - pd.Timestamp("1970-01-01").tz_localize(pytz.UTC))
+        / pd.Timedelta("1s")
     ).astype(int)
 
 
@@ -37,7 +38,9 @@ class Source:
         )
 
     @abstractmethod
-    def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
+    def _get_data(
+        self, latitude, longitude, timezone, date_from, date_to, hbase_table
+    ):
         """
         Gets forecast data from source
 
@@ -50,7 +53,13 @@ class Source:
         pass
 
     def get_data(
-        self, latitude, longitude, timezone, date_from, date_to, hbase_table=None
+        self,
+        latitude,
+        longitude,
+        timezone,
+        date_from,
+        date_to,
+        hbase_table=None,
     ):
         data = self._get_data(
             latitude, longitude, timezone, date_from, date_to, hbase_table
@@ -61,7 +70,7 @@ class Source:
         data = data.sort_values(by=["ts"])
         return data
 
-    def _get_from_hbase(self, day, hbase_table):
+    def _get_from_hbase(self, latitude, longitude, timezone, day, hbase_table):
         """
         Gets all raw data from HBase for a given day
 
@@ -72,6 +81,11 @@ class Source:
         # TODO:
         if hbase_table is None:
             return pd.DataFrame({})
+        # table = self.hbase.get_table(hbase_table, {"info": {}})
+        # table.scan(
+        #    row_start="%s~%s~%d" % (latitude, longitude, 1609455600),
+        #    batch_size=24,
+        # )
         return pd.DataFrame({})
 
     def save(self, data, hbase_table):

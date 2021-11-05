@@ -18,13 +18,21 @@ class MeteoGalicia(Source):
     def __init__(self, config):
         super(MeteoGalicia, self).__init__(config)
 
-    def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
+    def _get_data(
+        self, latitude, longitude, timezone, date_from, date_to, hbase_table
+    ):
         data = None
-        days = pd.date_range(date_from, date_to - datetime.timedelta(days=1), freq="d")
+        days = pd.date_range(
+            date_from, date_to - datetime.timedelta(days=1), freq="d"
+        )
         for day in days:
-            daily_data = self._get_from_hbase(day, hbase_table)
+            daily_data = self._get_from_hbase(
+                latitude, longitude, timezone, day, hbase_table
+            )
             if len(daily_data) < 24:
-                daily_data = self._get_data_day(latitude, longitude, timezone, day)
+                daily_data = self._get_data_day(
+                    latitude, longitude, timezone, day
+                )
                 data = (
                     pd.merge(data, daily_data, how="outer")
                     if data is not None
@@ -129,7 +137,8 @@ class MeteoGalicia(Source):
                 solar_data = pd.read_csv(StringIO(r.text), sep=",")
                 if len(solar_data) == 0:
                     raise Exception(
-                        "Location out of the bounding box, trying with another resolution..."
+                        "Location out of the bounding box, "
+                        "trying with another resolution..."
                         "(Actual: " + str(resolution) + "km)"
                     )
                 else:
