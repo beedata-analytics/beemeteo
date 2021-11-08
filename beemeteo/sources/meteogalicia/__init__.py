@@ -33,11 +33,11 @@ class MeteoGalicia(Source):
                 daily_data = self._get_data_day(
                     latitude, longitude, timezone, day
                 )
-                data = (
-                    pd.merge(data, daily_data, how="outer")
-                    if data is not None
-                    else daily_data
-                )
+            data = (
+                pd.merge(data, daily_data, how="outer")
+                if data is not None
+                else daily_data
+            )
         return data
 
     def _get_data_day(self, latitude, longitude, timezone, day):

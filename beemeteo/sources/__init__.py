@@ -79,13 +79,24 @@ class Source:
         :return:
         """
         # TODO:
-        if hbase_table is None:
-            return pd.DataFrame({})
-        # table = self.hbase.get_table(hbase_table, {"info": {}})
-        # table.scan(
-        #    row_start="%s~%s~%d" % (latitude, longitude, 1609455600),
-        #    batch_size=24,
-        # )
+        if hbase_table is not None:
+            table = self.hbase.get_table(hbase_table, {"info": {}})
+            measures = []
+            for row_key, data in table.scan(
+                columns=["info"],
+                row_start="%s~%s~%d" % (latitude, longitude, 1609462800),
+            ):
+                new_data = data.copy()
+                for key, n_key in zip(
+                    data.keys(),
+                    [str(key).replace("info:", "") for key in data.keys()],
+                ):
+                    new_data[n_key] = new_data.pop(key)
+                new_data["latitude"] = latitude
+                new_data["longitude"] = longitude
+                new_data["ts"] = int(row_key.decode("UTF-8").split("~")[2])
+                measures.append(new_data)
+            return pd.DataFrame.from_dict(measures)
         return pd.DataFrame({})
 
     def save(self, data, hbase_table):
