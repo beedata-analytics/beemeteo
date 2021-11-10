@@ -1,4 +1,7 @@
+import datetime
+
 from abc import abstractmethod
+from datetime import timedelta
 
 import pandas as pd
 import pytz
@@ -14,11 +17,18 @@ def _to_tz(ts, timezone):
     )
 
 
-def _dt_to_ts(dt):
-    return (
-        (dt - pd.Timestamp("1970-01-01").tz_localize(pytz.UTC))
-        / pd.Timedelta("1s")
-    ).astype(int)
+def _dt_to_ts(dt, timezone=pytz.UTC):
+    ts_init = pd.Timestamp("1970-01-01")
+    if dt.dt.tz is not None:
+        ts_init = ts_init.tz_localize(timezone)
+    return ((dt - ts_init) / pd.Timedelta("1s")).astype(int)
+
+
+def _local_dt_to_ts(day, timezone):
+    dt = day.tz_localize(timezone).to_pydatetime()
+    return (dt - datetime.datetime(1970, 1, 1, tzinfo=pytz.UTC)) / timedelta(
+        seconds=1
+    )
 
 
 class Source:
@@ -38,17 +48,15 @@ class Source:
         )
 
     @abstractmethod
-    def _get_data(
-        self, latitude, longitude, timezone, date_from, date_to, hbase_table
-    ):
+    def _get_data_day(self, latitude, longitude, timezone, day):
         """
-        Gets forecast data from source
+        Gets one day of forecast data from source
 
-        :param float latitude: latitude
-        :param float longitude: longitude
-        :param timezone: timezone
-        :param datetime.datetime day: day to forecast
-        :param str hbase_table: HBase table for source
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param timezone: station's timezone
+        :param day: day to retrieve data from
+        :return: all raw data for a given day
         """
         pass
 
@@ -61,42 +69,70 @@ class Source:
         date_to,
         hbase_table=None,
     ):
-        data = self._get_data(
-            latitude, longitude, timezone, date_from, date_to, hbase_table
+        """
+        Gets forecast data from source
+
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param timezone: station's timezone
+        :param date_from: start date
+        :param date_to: end date
+        :param hbase_table: HBase table for source
+        """
+        data = None
+        days = pd.date_range(
+            date_from, date_to - datetime.timedelta(days=1), freq="d"
         )
-        data["ts"] = _dt_to_ts(data["time"])
+        for day in days:
+            ts = _local_dt_to_ts(day, timezone)
+            daily_data = self._get_from_hbase(
+                latitude, longitude, ts, hbase_table
+            )
+            if len(daily_data) < 24:
+                daily_data = self._get_data_day(
+                    latitude, longitude, timezone, day
+                )
+            data = (
+                pd.merge(data, daily_data, how="outer")
+                if data is not None
+                else daily_data
+            )
         data["latitude"] = latitude
         data["longitude"] = longitude
         data = data.sort_values(by=["ts"])
         return data
 
-    def _get_from_hbase(self, latitude, longitude, timezone, day, hbase_table):
+    def _get_from_hbase(self, latitude, longitude, ts, hbase_table):
         """
         Gets all raw data from HBase for a given day
 
-        :param day: a given day
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param ts: a given timestamp
         :param hbase_table: HBase table for source
         :return:
         """
-        # TODO:
         if hbase_table is not None:
             table = self.hbase.get_table(hbase_table, {"info": {}})
             measures = []
             for row_key, data in table.scan(
                 columns=["info"],
-                row_start="%s~%s~%d" % (latitude, longitude, 1609462800),
+                row_start="%s~%s~%d" % (latitude, longitude, ts),
             ):
                 new_data = data.copy()
                 for key, n_key in zip(
                     data.keys(),
-                    [str(key).replace("info:", "") for key in data.keys()],
+                    [
+                        key.decode("utf-8").replace("info:", "")
+                        for key in data.keys()
+                    ],
                 ):
-                    new_data[n_key] = new_data.pop(key)
+                    new_data[n_key] = new_data.pop(key).decode("utf-8")
                 new_data["latitude"] = latitude
                 new_data["longitude"] = longitude
                 new_data["ts"] = int(row_key.decode("UTF-8").split("~")[2])
                 measures.append(new_data)
-            return pd.DataFrame.from_dict(measures)
+            return pd.DataFrame(measures)
         return pd.DataFrame({})
 
     def save(self, data, hbase_table):

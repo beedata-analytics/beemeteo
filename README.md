@@ -74,7 +74,7 @@ import pytz
 
 from beemeteo.sources.cams import CAMS
 
-username = os.environ.get("SODA_USERNAME")
+username = os.environ["SODA_USERNAME"]
 source = CAMS({"cams": {"cams-registered-mails": [username]}})
 source.get_data(
     41.29,
@@ -95,7 +95,7 @@ import pytz
 
 from beemeteo.sources.darksky import DarkSky
 
-api_key = os.environ.get("DARKSKY_API_KEY")
+api_key = os.environ["DARKSKY_API_KEY"]
 source = DarkSky({"darksky": {"api-key": api_key}})
 source.get_data(
     41.29,

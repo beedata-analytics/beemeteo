@@ -7,6 +7,7 @@ import pytz
 import requests
 
 from beemeteo.sources import Source
+from beemeteo.sources import _dt_to_ts
 from beemeteo.sources import _to_tz
 from dateutil.relativedelta import relativedelta
 
@@ -27,43 +28,16 @@ class CAMS(Source):
         ]
         assert len(self.cams_registered_mails) > 0
 
-    def _get_data(
-        self, latitude, longitude, timezone, date_from, date_to, hbase_table
-    ):
-        data = None
-        days = pd.date_range(
-            date_from, date_to - datetime.timedelta(days=1), freq="d"
-        )
-        for day in days:
-            daily_data = self._get_from_hbase(
-                latitude, longitude, timezone, day, hbase_table
-            )
-            if len(daily_data) < 24:
-                daily_data = self._get_data_day(
-                    latitude, longitude, timezone, day
-                )
-                if daily_data is None:
-                    logger.info(
-                        "[CAMS] could not retrieve info for %s" % (day)
-                    )
-                else:
-                    data = (
-                        pd.merge(data, daily_data, how="outer")
-                        if data is not None
-                        else daily_data
-                    )
-        return data
-
     def _get_data_day(self, latitude, longitude, timezone, day):
         """
         Gets solar radiation information for a location on a given day
         http://www.soda-pro.com/web-services/radiation/cams-radiation-service/info
 
-        :param float latitude: longitude
-        :param float longitude: latitude
-        :param timezone: timezone
-        :param datetime.datetime day:
-        :return:
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param timezone: station's timezone
+        :param day: day to retrieve data from
+        :return: all raw data for a given day
         """
         date_begin = _to_tz(day, timezone)
         date_end = _to_tz(
@@ -77,6 +51,11 @@ class CAMS(Source):
                 logger.info(
                     "[CAMS] %s retrieved info for %s" % (mail, date_begin)
                 )
+                data["ts"] = _dt_to_ts(
+                    pd.to_datetime(data["time"]).dt.tz_convert(timezone),
+                    timezone,
+                )
+                data.drop(["time"], axis=1, inplace=True)
                 return data
             else:
                 logger.info(

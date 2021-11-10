@@ -4,10 +4,10 @@ import logging
 from io import StringIO
 
 import pandas as pd
-import pytz
 import requests
 
 from beemeteo.sources import Source
+from beemeteo.sources import _dt_to_ts
 
 
 logging.basicConfig(level=logging.INFO)
@@ -18,31 +18,17 @@ class MeteoGalicia(Source):
     def __init__(self, config):
         super(MeteoGalicia, self).__init__(config)
 
-    def _get_data(
-        self, latitude, longitude, timezone, date_from, date_to, hbase_table
-    ):
-        data = None
-        days = pd.date_range(
-            date_from, date_to - datetime.timedelta(days=1), freq="d"
-        )
-        for day in days:
-            daily_data = self._get_from_hbase(
-                latitude, longitude, timezone, day, hbase_table
-            )
-            if len(daily_data) < 24:
-                daily_data = self._get_data_day(
-                    latitude, longitude, timezone, day
-                )
-            data = (
-                pd.merge(data, daily_data, how="outer")
-                if data is not None
-                else daily_data
-            )
-        return data
-
     def _get_data_day(self, latitude, longitude, timezone, day):
+        """
+        Gets solar radiation information for a location on a given day
+
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param timezone: station's timezone
+        :param day: day to retrieve data from
+        :return: all raw data for a given day
+        """
         run = 0
-        days_forecasted = 1
         for resolution in [(4, 2), (12, 2), (12, 1), (36, 2), (36, 1)]:
             try:
                 # Last 14 days of operational forecasts
@@ -145,12 +131,16 @@ class MeteoGalicia(Source):
                     solar_data = solar_data.rename(
                         columns={"date": "time", 'swflx[unit="W m-2"]': "GHI"}
                     )
-                    solar_data["time"] = pd.to_datetime(
-                        solar_data["time"]
-                    ).dt.tz_convert(pytz.UTC)
-                    solar_data = solar_data[["time", "GHI"]]
+                    solar_data["ts"] = _dt_to_ts(
+                        pd.to_datetime(solar_data["time"]).dt.tz_convert(
+                            timezone
+                        ),
+                        timezone,
+                    )
+                    solar_data = solar_data[["ts", "GHI"]]
                     solar_data = solar_data.reset_index(drop=True)
-                    return solar_data[: (days_forecasted * 24)]
+
+                    return solar_data
             except Exception as e:
                 logger.error(e)
         return pd.DataFrame({})
