@@ -16,17 +16,30 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.option("--name", type=str, help="Raw data source name")
-@click.option("--filename", type=click.File("rb"), help="Configuration filename")
+@click.option(
+    "--filename", type=click.File("rb"), help="Configuration filename"
+)
 @click.option("--latitude", type=float, help="Station's latitude")
 @click.option("--longitude", type=float, help="Station's longitude")
 @click.option("--timezone", type=str, help="Station's timezone")
 @click.option(
     "--date-from", type=click.DateTime(formats=["%Y-%m-%d"]), help="Start date"
 )
-@click.option("--date-to", type=click.DateTime(formats=["%Y-%m-%d"]), help="End date")
-@click.option("--hbase-table", type=str, help="Source HBase table name for raw data")
+@click.option(
+    "--date-to", type=click.DateTime(formats=["%Y-%m-%d"]), help="End date"
+)
+@click.option(
+    "--hbase-table", type=str, help="Source HBase table name for raw data"
+)
 def main(
-    name, filename, latitude, longitude, timezone, date_from, date_to, hbase_table
+    name,
+    filename,
+    latitude,
+    longitude,
+    timezone,
+    date_from,
+    date_to,
+    hbase_table,
 ):
     """
     Gets raw data from source
@@ -40,7 +53,12 @@ def main(
 
     source = sources.get(name)(json.load(filename))
     data = source.get_data(
-        latitude, longitude, pytz.timezone(timezone), date_from, date_to, hbase_table
+        latitude,
+        longitude,
+        pytz.timezone(timezone),
+        date_from,
+        date_to,
+        hbase_table,
     )
     if hbase_table is not None:
         source.save(data, hbase_table)

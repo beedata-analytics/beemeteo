@@ -1,7 +1,5 @@
-import datetime
 import forecastio
 import pandas as pd
-import pytz
 
 from beemeteo.sources import Source
 
@@ -10,16 +8,6 @@ class DarkSky(Source):
     def __init__(self, config):
         super(DarkSky, self).__init__(config)
         self.api_key = self.config["darksky"]["api-key"]
-
-    def _get_data(self, latitude, longitude, timezone, date_from, date_to, hbase_table):
-        data = None
-        days = pd.date_range(date_from, date_to - datetime.timedelta(days=1), freq='d')
-        for day in days:
-            daily_data = self._get_from_hbase(day, hbase_table)
-            if len(daily_data) < 24:
-                daily_data = self._get_data_day(latitude, longitude, timezone, day)
-                data = pd.merge(data, daily_data, how="outer") if data is not None else daily_data
-        return data
 
     def _get_data_day(self, latitude, longitude, timezone, day):
         """
@@ -44,6 +32,8 @@ class DarkSky(Source):
             .data
         ):
             d = item.d
-            d.update({"time": pytz.UTC.localize(item.time)})
             hourly.append(d)
-        return pd.DataFrame.from_dict(hourly)
+        data = pd.DataFrame(hourly)
+        data["ts"] = data["time"]
+        data.drop(["time"], axis=1, inplace=True)
+        return data
