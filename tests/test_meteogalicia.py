@@ -15,5 +15,5 @@ def test_meteogalicia():
         datetime.datetime(2021, 1, 1),
         datetime.datetime(2021, 1, 2),
     )
-    expected = pd.read_csv("b2back/meteogalicia.csv")
+    expected = pd.read_csv("tests/b2back/meteogalicia.csv")
     assert data.equals(expected)

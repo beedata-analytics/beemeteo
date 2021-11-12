@@ -17,5 +17,5 @@ def test_cams():
         datetime.datetime(2021, 1, 1),
         datetime.datetime(2021, 1, 2),
     )
-    expected = pd.read_csv("b2back/cams.csv")
+    expected = pd.read_csv("tests/b2back/cams.csv")
     assert data.equals(expected)
