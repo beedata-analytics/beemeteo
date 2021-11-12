@@ -108,7 +108,9 @@ class Source:
         ).sort_values(by=["ts"])
 
         key_cols = ["latitude", "longitude", "ts"]
-        data = data.set_index(key_cols).reset_index()
+        data = data.set_index(key_cols)[
+            sorted(data.columns[~data.columns.isin(key_cols)])
+        ].reset_index()
 
         return data
 
