@@ -78,7 +78,7 @@ class Source:
         """
         data = None
         days = pd.date_range(
-            date_from, date_to - datetime.timedelta(days=1), freq="d"
+            date_from - datetime.timedelta(days=1), date_to, freq="d"
         )
         ts_from = _local_dt_to_ts(date_from)
         ts_to = _local_dt_to_ts(date_to)
