@@ -24,11 +24,8 @@ def _dt_to_ts(dt, timezone=pytz.UTC):
     return ((dt - ts_init) / pd.Timedelta("1s")).astype(int)
 
 
-def _local_dt_to_ts(day, timezone):
-    dt = day.tz_localize(timezone).to_pydatetime()
-    return (dt - datetime.datetime(1970, 1, 1, tzinfo=pytz.UTC)) / timedelta(
-        seconds=1
-    )
+def _local_dt_to_ts(dt):
+    return int((dt - datetime.datetime(1970, 1, 1)) / timedelta(seconds=1))
 
 
 class Source:
@@ -83,8 +80,15 @@ class Source:
         days = pd.date_range(
             date_from, date_to - datetime.timedelta(days=1), freq="d"
         )
+        ts_from = _local_dt_to_ts(date_from)
+        ts_to = _local_dt_to_ts(date_to)
         for day in days:
-            ts = _local_dt_to_ts(day, timezone)
+            ts = _local_dt_to_ts(day.to_pydatetime())
+            if (
+                data is not None
+                and len(data.query("ts >= {}".format(ts_to))) > 0
+            ):
+                continue
             daily_data = self._get_from_hbase(
                 latitude, longitude, ts, hbase_table
             )
@@ -99,7 +103,13 @@ class Source:
             )
         data["latitude"] = latitude
         data["longitude"] = longitude
-        data = data.sort_values(by=["ts"])
+        data = data.query(
+            "ts >= {} and ts <= {}".format(ts_from, ts_to)
+        ).sort_values(by=["ts"])
+
+        key_cols = ["latitude", "longitude", "ts"]
+        data = data.set_index(key_cols).reset_index()
+
         return data
 
     def _get_from_hbase(self, latitude, longitude, ts, hbase_table):
