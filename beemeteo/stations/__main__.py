@@ -2,7 +2,6 @@ import logging
 
 import click
 
-from beemeteo.stations.coordinates import Coordinates
 from beemeteo.stations.postal_code import PostalCode
 from beemeteo.stations.stations import Stations
 
@@ -20,11 +19,9 @@ def main(stations, postal_code, country):
     Gets the closest station for a given postal code.
     """
 
-    postal_code = PostalCode(country, postal_code)
-    building = Coordinates(postal_code.latitude, postal_code.longitude)
-    (latitude, longitude, distance) = building.find_closest(
-        Stations.load(stations)
-    )[0]
+    (latitude, longitude, distance) = PostalCode(
+        country, postal_code
+    ).find_closest(Stations.load(stations))
     logger.info(
         f"Closest station ({latitude}, {longitude}) is {distance} "
         "kilometers from postal code {postal_code})".format(

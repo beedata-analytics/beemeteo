@@ -1,5 +1,7 @@
 import pandas as pd
 
+from beemeteo.stations.coordinates import Coordinates
+
 
 class PostalCode:
     def __init__(self, country, postal_code):
@@ -34,3 +36,7 @@ class PostalCode:
         return data.query(
             "country == @self.country & postalCode == @self.postal_code"
         )
+
+    def find_closest(self, stations):
+        building = Coordinates(self.latitude, self.longitude)
+        return building.find_closest(stations)[0]
