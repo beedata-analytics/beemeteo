@@ -23,7 +23,7 @@ def main(stations, postal_code, country):
         country, postal_code
     ).find_closest(Stations.load(stations))
     logger.info(
-        f"Closest station ({latitude}, {longitude}) is {distance} "
+        "Closest station ({latitude}, {longitude}) is {distance} "
         "kilometers from postal code {postal_code})".format(
             latitude=latitude,
             longitude=longitude,
