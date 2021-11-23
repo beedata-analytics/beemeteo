@@ -5,6 +5,7 @@ import pandas as pd
 import pytz
 
 from beemeteo.sources.darksky import DarkSky
+from pandas.util.testing import assert_frame_equal
 
 
 def test_darksky():
@@ -18,4 +19,12 @@ def test_darksky():
         datetime.datetime(2021, 1, 2),
     )
     expected = pd.read_csv("tests/b2back/darksky.csv")
-    assert data.equals(expected)
+    columns_to_compare = [
+        "latitude",
+        "longitude",
+        "ts",
+        "windBearing",
+        "windGust",
+        "windSpeed",
+    ]
+    assert_frame_equal(data[columns_to_compare], expected[columns_to_compare])
