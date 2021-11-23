@@ -12,7 +12,9 @@ class PostalCode:
         self.longitude = self.data["longitude"].values[0]
 
     def __str__(self):
-        return f"{self.country} {self.postal_code}"
+        return "{country} {postal_code}".format(
+            country=self.country, postal_code=self.postal_code
+        )
 
     def _get(self):
         data = pd.read_table(
