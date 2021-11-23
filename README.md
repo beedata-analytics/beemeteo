@@ -17,29 +17,17 @@ A python package and command line tool to download weather data from different s
 - [Dark Sky API](https://darksky.net/dev)
 - [MeteoGalicia](http://mandeo.meteogalicia.es)
 
-## Package installation
+## Installation
 
 ```bash
-make install
-```
-
-## For developers
-
-```bash
-make build
-```
-
-## Run tests
-
-```bash
-make test
+pip install git+ssh://git@github.com/beedata-analytics/beemeteo.git
 ```
 
 ## Usage
 
 ### command line
 
-```bash
+```console
 $ python -m beemeteo --help
 
 Usage: python -m beemeteo [OPTIONS]
