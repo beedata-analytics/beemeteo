@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "beemeteo"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python library to download weather data."
 authors = ["Beedata Analytics <info@beedataanalytics.com>"]
 license = "GNU General Public License v3.0"
