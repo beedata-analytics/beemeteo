@@ -20,7 +20,7 @@ A python package and command line tool to download weather data from different s
 ## Package installation
 
 ```bash
-make install
+pip install git+ssh://git@github.com/beedata-analytics/beemeteo.git
 ```
 
 ## For developers
@@ -39,7 +39,7 @@ make test
 
 ### command line
 
-```bash
+```console
 $ python -m beemeteo --help
 
 Usage: python -m beemeteo [OPTIONS]
