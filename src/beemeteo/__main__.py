@@ -1,7 +1,5 @@
-import json
+from datetime import datetime
 import logging
-import sys
-import pytz
 from beemeteo.sources.cams import CAMS
 from beemeteo.sources.darksky import DarkSky
 from beemeteo.sources.meteogalicia import MeteoGalicia
@@ -24,8 +22,8 @@ def main(source, config, latitude, longitude, date_from, date_to, data_file):
     data = source_.get_historical_data(
         latitude,
         longitude,
-        date_from,
-        date_to,
+        datetime.fromisoformat(date_from),
+        datetime.fromisoformat(date_to)
     )
     data.to_csv(data_file, index=True)
 
