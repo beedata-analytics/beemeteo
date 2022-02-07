@@ -4,8 +4,8 @@ import logging
 import pandas as pd
 import pytz
 import requests
-from src.beemeteo.sources import Source
-from src.beemeteo.utils import _pandas_dt_to_ts_utc
+from beemeteo.sources import Source
+from beemeteo.utils import _pandas_dt_to_ts_utc
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 

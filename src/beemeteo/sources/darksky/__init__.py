@@ -3,7 +3,7 @@ import datetime
 import forecastio
 import pandas as pd
 
-from src.beemeteo.sources import Source, logger
+from beemeteo.sources import Source, logger
 
 
 class DarkSky(Source):

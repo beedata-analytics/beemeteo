@@ -6,8 +6,8 @@ import pandas as pd
 import pytz
 import requests
 
-from src.beemeteo.sources import Source, logger
-from src.beemeteo.utils import _pandas_dt_to_ts_utc, _pandas_to_tz
+from beemeteo.sources import Source, logger
+from beemeteo.utils import _pandas_dt_to_ts_utc, _pandas_to_tz
 
 
 class MeteoGalicia(Source):
