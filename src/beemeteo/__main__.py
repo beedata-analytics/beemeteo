@@ -2,9 +2,9 @@ import json
 import logging
 import sys
 import pytz
-from src.beemeteo.sources.cams import CAMS
-from src.beemeteo.sources.darksky import DarkSky
-from src.beemeteo.sources.meteogalicia import MeteoGalicia
+from beemeteo.sources.cams import CAMS
+from beemeteo.sources.darksky import DarkSky
+from beemeteo.sources.meteogalicia import MeteoGalicia
 import argparse
 
 logging.basicConfig(level=logging.INFO)
