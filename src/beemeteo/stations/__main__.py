@@ -2,8 +2,8 @@ import logging
 
 import click
 
-from beemeteo.stations.postal_code import PostalCode
-from beemeteo.stations.stations import Stations
+from src.beemeteo.stations.postal_code import PostalCode
+from src.beemeteo.stations.stations import Stations
 
 
 logging.basicConfig(level=logging.INFO)

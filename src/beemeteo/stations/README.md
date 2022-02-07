@@ -29,8 +29,8 @@ Example: python -m beemeteo.stations \
 
 ```python
 
-from beemeteo.stations.postal_code import PostalCode
-from beemeteo.stations.stations import Stations
+from src.beemeteo import PostalCode
+from src.beemeteo import Stations
 
 postal_code = PostalCode("ES", "08211")
 (latitude, longitude, distance) = postal_code.find_closest(

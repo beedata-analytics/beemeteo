@@ -7,7 +7,7 @@ import pandas as pd
 import pytz
 from timezonefinder import TimezoneFinder
 
-from beemeteo.utils import save_to_hbase, read_config, get_hbase_data_batch, _datetime_dt_to_ts_utc, _pandas_ts_to_dt, \
+from src.beemeteo.utils import save_to_hbase, read_config, get_hbase_data_batch, _datetime_dt_to_ts_utc, _pandas_ts_to_dt, \
     _datetime_to_tz
 
 logging.basicConfig(level=logging.DEBUG)

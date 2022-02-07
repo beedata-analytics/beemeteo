@@ -1,6 +1,6 @@
 import datetime
 import pandas as pd
-from beemeteo.sources.cams import CAMS
+from src.beemeteo.sources.cams import CAMS
 
 
 def test_cams():

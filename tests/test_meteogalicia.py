@@ -1,9 +1,8 @@
 import datetime
 
 import pandas as pd
-import pytz
 
-from beemeteo.sources.meteogalicia import MeteoGalicia
+from src.beemeteo import MeteoGalicia
 
 
 def test_meteogalicia():

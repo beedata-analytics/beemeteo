@@ -1,10 +1,8 @@
 import datetime
-import os
 
 import pandas as pd
-import pytz
 
-from beemeteo.sources.darksky import DarkSky
+from src.beemeteo import DarkSky
 
 
 def test_darksky():

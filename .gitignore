@@ -9,7 +9,7 @@ build
 _build
 .cache
 *.so
-
+venv
 # IDE
 .DS_Store
 .idea/*

@@ -1,6 +1,6 @@
 import pandas as pd
 
-from beemeteo.stations.coordinates import Coordinates
+from src.beemeteo.stations.coordinates import Coordinates
 
 
 class PostalCode:

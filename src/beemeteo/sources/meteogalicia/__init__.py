@@ -1,5 +1,4 @@
 import datetime
-import logging
 
 from io import StringIO
 
@@ -7,8 +6,8 @@ import pandas as pd
 import pytz
 import requests
 
-from beemeteo.sources import Source, logger
-from beemeteo.utils import _pandas_dt_to_ts_utc, _pandas_to_tz, _datetime_dt_to_ts_utc
+from src.beemeteo.sources import Source, logger
+from src.beemeteo.utils import _pandas_dt_to_ts_utc, _pandas_to_tz
 
 
 class MeteoGalicia(Source):

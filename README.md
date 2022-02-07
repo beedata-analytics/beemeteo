@@ -20,7 +20,7 @@ A python package and command line tool to download weather data from different s
 ## Installation
 
 ```bash
-pip install git+ssh://git@github.com/beedata-analytics/beemeteo.git
+pip install https://github.com/BeeGroup-cimne/beemeteo
 ```
 
 ## Usage
@@ -65,7 +65,7 @@ import os
 
 import pytz
 
-from beemeteo.sources.cams import CAMS
+from src.beemeteo.sources.cams import CAMS
 
 username = os.environ["SODA_USERNAME"]
 source = CAMS({"cams": {"cams-registered-mails": [username]}})
@@ -86,7 +86,7 @@ import os
 
 import pytz
 
-from beemeteo.sources.darksky import DarkSky
+from src.beemeteo import DarkSky
 
 api_key = os.environ["DARKSKY_API_KEY"]
 source = DarkSky({"darksky": {"api-key": api_key}})
@@ -106,7 +106,7 @@ import datetime
 
 import pytz
 
-from beemeteo.sources.meteogalicia import MeteoGalicia
+from src.beemeteo import MeteoGalicia
 
 source = MeteoGalicia({})
 source.get_data(
