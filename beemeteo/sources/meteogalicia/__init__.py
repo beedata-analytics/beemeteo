@@ -4,28 +4,67 @@ import logging
 from io import StringIO
 
 import pandas as pd
+import pytz
 import requests
 
-from beemeteo.sources import Source
-from beemeteo.sources import _dt_to_ts
-
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+from beemeteo.sources import Source, logger
+from beemeteo.utils import _pandas_dt_to_ts_utc, _pandas_to_tz, _datetime_dt_to_ts_utc
 
 
 class MeteoGalicia(Source):
+    hbase_table = "meteo_galicia_historical"
+
     def __init__(self, config):
         super(MeteoGalicia, self).__init__(config)
 
-    def _get_data_day(self, latitude, longitude, timezone, day):
+    def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
+        missing_data = pd.DataFrame()
+        for ts_ini, ts_end in gaps:
+            data_period = pd.DataFrame()
+            # for each gap, get the date at instant 0 (we will always download the full day) the ts_end at 00,
+            # is also downloaded at full
+            ts_ini = local_tz.localize(datetime.datetime.combine(ts_ini.date(), datetime.datetime.min.time()))
+            ts_end = local_tz.localize(datetime.datetime.combine(ts_end.date(), datetime.datetime.min.time()))
+            logger.debug("No data for period {ts_ini} {ts_end}, downloading".format(ts_ini=ts_ini, ts_end=ts_end))
+
+            # meteogalicia starts time of day at 1 UTC. We have to calculate if we need to request for another day.
+            meteogalicia_start = pytz.UTC.localize(datetime.datetime.combine(ts_ini.date(), datetime.time(1))). \
+                astimezone(local_tz)
+            if meteogalicia_start > ts_ini:
+                ts_ini_loop = ts_ini - datetime.timedelta(days=1)
+            else:
+                ts_ini_loop = ts_ini
+
+            for day in pd.date_range(ts_ini_loop, ts_end, freq="1d"):
+                logger.debug("downloading for day {}".format(day))
+                daily_data = self._get_historic_data_day(latitude, longitude, day, local_tz)
+                data_period = pd.concat([data_period, daily_data])
+            data_period = data_period.sort_values(by=["ts"])
+            data_period = data_period.query(
+                "ts >= {} and ts <= {}".format(
+                    ts_ini.timestamp(),
+                    (ts_end + datetime.timedelta(hours=23)).timestamp()
+                )
+            )
+            missing_data = pd.concat([missing_data, data_period])
+
+        missing_data = missing_data.sort_values(by=["ts"])
+        missing_data['latitude'] = latitude
+        missing_data['longitude'] = longitude
+        missing_data.drop_duplicates(subset=['latitude', 'longitude', 'ts'], inplace=True)
+        key_cols = ["latitude", "longitude", "ts"]
+        missing_data = missing_data.set_index(key_cols)[
+            sorted(missing_data.columns[~missing_data.columns.isin(key_cols)])
+        ].reset_index() if not missing_data.empty else missing_data
+        return missing_data
+
+    def _get_historic_data_day(self, latitude, longitude, day, local_tz):
         """
         Gets solar radiation information for a location on a given day
 
         :param latitude: station's latitude
         :param longitude: station's longitude
-        :param timezone: station's timezone
-        :param day: day to retrieve data from
+        :param day: day to retrieve data
         :return: all raw data for a given day
         """
         run = 0
@@ -47,7 +86,10 @@ class MeteoGalicia(Source):
                 # longitude=0.62&
                 # latitude=41.62&
                 # temporal=all
-                if (datetime.datetime.utcnow() - day).days <= 14:
+                if (
+                        (pytz.UTC.localize(datetime.datetime.utcnow()).astimezone(local_tz) -
+                         day.astimezone(local_tz)).days <= 14
+                ):
                     url_mg = (
                         "http://mandeo.meteogalicia.es/"
                         "thredds/"
@@ -131,11 +173,8 @@ class MeteoGalicia(Source):
                     solar_data = solar_data.rename(
                         columns={"date": "time", 'swflx[unit="W m-2"]': "GHI"}
                     )
-                    solar_data["ts"] = _dt_to_ts(
-                        pd.to_datetime(solar_data["time"]).dt.tz_convert(
-                            timezone
-                        ),
-                        timezone,
+                    solar_data["ts"] = _pandas_dt_to_ts_utc(
+                        _pandas_to_tz(pd.to_datetime(solar_data["time"]), local_tz)
                     )
                     solar_data = solar_data[["ts", "GHI"]]
                     solar_data = solar_data.reset_index(drop=True)

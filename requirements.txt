@@ -1,0 +1,15 @@
+certifi==2021.10.8
+charset-normalizer==2.0.11
+happybase==1.2.0
+idna==3.3
+numpy==1.21.5
+pandas==1.1.5
+ply==3.11
+python-dateutil==2.8.2
+pytz==2021.3
+requests==2.27.1
+six==1.16.0
+thriftpy2==0.4.14
+urllib3==1.26.8
+python-forecastio==1.4.0
+timezonefinder==5.2.0

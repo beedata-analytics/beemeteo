@@ -1,17 +1,11 @@
 import datetime
 import io
 import logging
-
 import pandas as pd
 import pytz
 import requests
-
 from beemeteo.sources import Source
-from beemeteo.sources import _dt_to_ts
-from beemeteo.sources import _to_tz
-from dateutil.relativedelta import relativedelta
-
-
+from beemeteo.utils import _pandas_dt_to_ts_utc
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -21,40 +15,82 @@ SODA_SERVER_MIRROR_SERVICE = "http://pro.soda-is.com/service/wps"
 
 
 class CAMS(Source):
+    hbase_table = "cams_historical"
+
     def __init__(self, config):
         super(CAMS, self).__init__(config)
         self.cams_registered_mails = self.config["cams"][
-            "cams-registered-mails"
+            "registered_emails"
         ]
         assert len(self.cams_registered_mails) > 0
 
-    def _get_data_day(self, latitude, longitude, timezone, day):
+    def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
+        # In cams, we can download as many data as we want, but we have limited number of requests. So, if we detect
+        # a gap we will try to download the full period again.
+        # if the gaps are 1 year apart, we will download them by separate.
+        gaps_df = pd.DataFrame(gaps)
+        gaps_df.columns = ["ini", "end"]
+        gaps_df.sort_values(by=["ini"], inplace=True)
+        gaps_df['next_start'] = gaps_df['ini'].shift(-1)
+        gaps_df['between_gaps'] = gaps_df.apply(lambda x: x["next_start"] - x['end'], axis=1)
+        gaps_df['join'] = (gaps_df.between_gaps < datetime.timedelta(days=365)
+                           if isinstance(gaps_df.between_gaps, bool) else False)
+        new_gaps = []
+        current_gap = [None, None]
+        init = False
+        # join the gaps that are less than 1 year apart
+        for i, g in gaps_df.iterrows():
+            if not init:
+                current_gap[0] = g.ini
+                init = True
+            current_gap[1] = g.end
+            if not g.join:
+                new_gaps.append(tuple(current_gap))
+                init = False
+                current_gap = [None, None]
+
+        missing_data = pd.DataFrame()
+        for ts_ini, ts_end in new_gaps:
+            # for each gap, get the date at instant 0 (we will always download the full day) the ts_end at 00,
+            # is also downloaded at full
+            ts_ini = local_tz.localize(datetime.datetime.combine(ts_ini.date(), datetime.datetime.min.time()))
+            ts_end = local_tz.localize(datetime.datetime.combine(ts_end.date(), datetime.datetime.max.time()))
+            logger.debug("No data for period {ts_ini} {ts_end}, downloading".format(ts_ini=ts_ini, ts_end=ts_end))
+            data_period = self._get_historic_period(latitude, longitude, ts_ini, ts_end, local_tz)
+            missing_data = pd.concat([missing_data, data_period])
+        missing_data = missing_data.sort_values(by=["ts"])
+        missing_data['latitude'] = latitude
+        missing_data['longitude'] = longitude
+        missing_data.drop_duplicates(subset=['latitude', 'longitude', 'ts'], inplace=True)
+        key_cols = ["latitude", "longitude", "ts"]
+        missing_data = missing_data.set_index(key_cols)[
+            sorted(missing_data.columns[~missing_data.columns.isin(key_cols)])
+        ].reset_index() if not missing_data.empty else missing_data
+        return missing_data
+
+    def _get_historic_period(self, latitude, longitude, date_begin, date_end, local_tz):
         """
         Gets solar radiation information for a location on a given day
         http://www.soda-pro.com/web-services/radiation/cams-radiation-service/info
 
         :param latitude: station's latitude
         :param longitude: station's longitude
-        :param timezone: station's timezone
-        :param day: day to retrieve data from
+        :param date_begin: day to retrieve data from
+        :param date_end: day to retrieve data to
+        :param local_tz: the timezone to return the timestamp
         :return: all raw data for a given day
         """
-        date_begin = _to_tz(day, timezone)
-        date_end = _to_tz(
-            day + relativedelta(days=1) - relativedelta(seconds=1), timezone
-        )
+        date_begin = date_begin.astimezone(pytz.UTC)
+        date_end = date_end.astimezone(pytz.UTC)
         for mail in self.cams_registered_mails:
             data = self._request(
                 mail, latitude, longitude, date_begin, date_end
             )
             if data is not None:
                 logger.info(
-                    "[CAMS] %s retrieved info for %s" % (mail, date_begin)
+                    "[CAMS] %s retrieved info for %s to  %s" % (mail, date_begin, date_end)
                 )
-                data["ts"] = _dt_to_ts(
-                    pd.to_datetime(data["time"]).dt.tz_convert(timezone),
-                    timezone,
-                )
+                data["ts"] = _pandas_dt_to_ts_utc(data["time"])
                 data.drop(["time"], axis=1, inplace=True)
                 return data
             else:
