@@ -25,7 +25,7 @@ def main(source, config, latitude, longitude, date_from, date_to, data_file):
         datetime.fromisoformat(date_from),
         datetime.fromisoformat(date_to)
     )
-    data.to_csv(data_file, index=True)
+    data.to_csv(data_file, index=False)
 
 
 if __name__ == "__main__":
