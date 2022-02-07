@@ -20,8 +20,8 @@ def main(source, config, latitude, longitude, date_from, date_to, data_file):
     }
     source_ = sources.get(source)(config)
     data = source_.get_historical_data(
-        latitude,
-        longitude,
+        float(latitude),
+        float(longitude),
         datetime.fromisoformat(date_from),
         datetime.fromisoformat(date_to)
     )
