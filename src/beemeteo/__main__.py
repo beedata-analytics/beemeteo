@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 import logging
 from beemeteo.sources.cams import CAMS
@@ -9,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def main(source, config, latitude, longitude, date_from, date_to, data_file):
+def main(source, conf, latitude, longitude, date_from, date_to, data_file):
     """
     Gets raw data from source
     """
@@ -18,7 +19,7 @@ def main(source, config, latitude, longitude, date_from, date_to, data_file):
         "DarkSky": DarkSky,
         "MeteoGalicia": MeteoGalicia,
     }
-    source_ = sources.get(source)(config)
+    source_ = sources.get(source)(conf)
     data = source_.get_historical_data(
         float(latitude),
         float(longitude),
@@ -39,4 +40,6 @@ if __name__ == "__main__":
     ap.add_argument("-d2", "--date_to", required=True, help="The date to get weather to (included)")
     ap.add_argument("-f", "--file", required=True, help="The file to store the data")
     args = ap.parse_args()
-    main(args.source, args.config, args.latitude, args.longitude, args.date_from, args.date_to, args.file)
+    with open(args.config) as config_f:
+        config = json.load(config_f)
+    main(args.source, config, args.latitude, args.longitude, args.date_from, args.date_to, args.file)

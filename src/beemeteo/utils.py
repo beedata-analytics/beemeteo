@@ -48,10 +48,8 @@ def _datetime_dt_to_ts_utc(dt):
                datetime.timedelta(seconds=1))
 
 
-def read_config(conf_file):
-    with open(conf_file) as config_f:
-        config = json.load(config_f)
-        return config
+def read_config(config):
+    return config
 
 
 def __get_h_table__(hbase, table_name, cf=None):

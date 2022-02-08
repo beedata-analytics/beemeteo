@@ -18,8 +18,8 @@ logger.setLevel(level=logging.DEBUG)
 class Source:
     hbase_table = None
 
-    def __init__(self, config_file):
-        self.config = read_config(config_file)
+    def __init__(self, config):
+        self.config = read_config(config)
 
     @abstractmethod
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
