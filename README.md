@@ -103,7 +103,7 @@ import os
 
 import pytz
 
-from beemeteo import DarkSky
+from beemeteo.sources.darksky import DarkSky
 
 source = DarkSky("config.json")
 source.get_data(
@@ -119,7 +119,7 @@ source.get_data(
 ```python
 import datetime
 import pytz
-from src.beemeteo import MeteoGalicia
+from beemeteo.sources.meteogalicia import MeteoGalicia
 source = MeteoGalicia("config.json")
 source.get_data(
     41.29,
