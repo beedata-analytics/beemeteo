@@ -2,16 +2,30 @@ import datetime
 
 import forecastio
 import pandas as pd
+import pytz
 
 from beemeteo.sources import Source, logger
 
 
 class DarkSky(Source):
-    hbase_table = "darksky_historical"
+    hbase_table_historical = "darksky_historical"
+    hbase_table_forecasting = "darksky_forecasting"
 
     def __init__(self, config):
         super(DarkSky, self).__init__(config)
         self.api_key = self.config["dark_sky"]["api_key"]
+
+    def _collect_forecasting(self, latitude, longitude, now, local_tz):
+        hourly = []
+        for point in forecastio.load_forecast(self.api_key, latitude, longitude, units="si", ).hourly().data:
+            d = point.d
+            hourly.append(d)
+        df = pd.DataFrame.from_records(hourly)
+        df.rename({"time": "timestamp"}, axis=1, inplace=True)
+        df['latitude'] = latitude
+        df['longitude'] = longitude
+        df["forecasting_timestamp"] = int(now.astimezone(pytz.UTC).timestamp())
+        return df
 
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
         # Darksky will return the data starting from 00 in local time and finishing at 23 local

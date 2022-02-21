@@ -1,10 +1,10 @@
 import datetime
 import pandas as pd
-from src.beemeteo.sources.cams import CAMS
-
+from beemeteo.sources.cams import CAMS
+import json
 
 def test_cams():
-    source = CAMS("config.json")
+    source = CAMS(json.load(open("config.json")))
     data = source.get_historical_data(
         latitude=41.29,
         longitude=2.19,

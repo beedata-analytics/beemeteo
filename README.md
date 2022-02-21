@@ -17,16 +17,16 @@ A python package and command line tool to download weather data from different s
   - Provides Europe and Africa historical solar radiation data ![OK](https://img.shields.io/badge/-OK-green)
 - [Dark Sky API](https://darksky.net/dev) (DarkSky)
   - Provides worldwide historical meteorological data ![OK](https://img.shields.io/badge/-OK-green)
-  - Provides worldwide prediction meteorological data ![NO](https://img.shields.io/badge/-OK-red)
+  - Provides worldwide prediction meteorological data ![NO](https://img.shields.io/badge/-OK-green)
 - [MeteoGalicia](http://mandeo.meteogalicia.es) (MeteoGalicia)
   - Provides Europe historical solar radiation data ![OK](https://img.shields.io/badge/-OK-green)
-  - Provides Europe prediction solar radiation data ![NO](https://img.shields.io/badge/-OK-red)
+  - Provides Europe prediction solar radiation data ![NO](https://img.shields.io/badge/-OK-green)
 ## Installation
 
 To install the package, use pip and the Git repository at the newest version
 
 ```bash
-pip install https://github.com/BeeGroup-cimne/beemeteo@v0.1.0
+pip install https://github.com/BeeGroup-cimne/beemeteo@v0.2.0
 ```
 ## Usage
 The application can be used as a command line or imported in a python package.

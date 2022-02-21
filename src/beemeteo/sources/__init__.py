@@ -16,7 +16,8 @@ logger.setLevel(level=logging.DEBUG)
 
 
 class Source:
-    hbase_table = None
+    hbase_table_historical = None
+    hbase_table_forecasting = None
 
     def __init__(self, config):
         self.config = read_config(config)
@@ -24,19 +25,80 @@ class Source:
     @abstractmethod
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
         """
-        Gets one day of forecast data from source
-
+        Gets historical data from source
         :param latitude: station's latitude
         :param longitude: station's longitude
-        :param ts_ini: day to retrieve data from
-        :param ts_end: day to retrieve data to
-        :return: all raw data for a given day
+        :param gaps: the list of gaps to retrieve from the source
+        :param local_tz: the local timezone of the station
+        :return: all raw data for the given gaps
         """
         pass
 
+    @abstractmethod
+    def _collect_forecasting(self, latitude, longitude, now, tz_local):
+        """
+        Gets one day of forecast data from source
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param gaps: the list of gaps to retrieve from the source
+        :param local_tz: the local timezone of the station
+        :return: all raw data for the given gaps
+        """
+        pass
+
+    def collect_forecasting(self, latitude, longitude):
+        """
+        Collects a forecasting point from the data_source and stores it in HBASE.
+        Many sources will need to call this function periodically to fill the forecasting database, for the sources
+        that don't provide historical forecasting
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        """
+        # set 3 dots in location
+        latitude = format(latitude, '.3f')
+        longitude = format(longitude, '.3f')
+
+        # all dates must be in the timezone of the location
+        tz_find = TimezoneFinder()
+        tz_in_location = pytz.timezone(tz_find.timezone_at(lat=float(latitude), lng=float(longitude)))
+        now = pytz.UTC.localize(datetime.datetime.utcnow()).astimezone(tz_in_location)
+        now = now.replace(minute=0, second=0, microsecond=0)
+        forecasted_data = self._collect_forecasting(latitude, longitude, now, tz_in_location)
+        forecasted_data = forecasted_data.query("timestamp >= {}".format(now.astimezone(pytz.UTC).timestamp())).\
+            sort_values(by=["forecasting_timestamp", "timestamp"])
+        save_to_hbase(forecasted_data.to_dict(orient="records"), self.hbase_table_forecasting,
+                      self.config['hbase_weather_data'], [("info", "all")],
+                      row_fields=["latitude", "longitude", "forecasting_timestamp", "timestamp"])
+
+    def get_forecasting_data(self, latitude, longitude, date_from, date_to):
+        """
+        Collects the forecasting data from the data_source and the forecasting for each available horizon
+        :param latitude: station's latitude
+        :param longitude: station's longitude
+        :param date_from: start date
+        :param date_to: end date
+        """
+        # set 3 dots in location
+        latitude = format(latitude, '.3f')
+        longitude = format(longitude, '.3f')
+
+        # all dates must be in the timezone of the location
+        tz_find = TimezoneFinder()
+        tz_in_location = pytz.timezone(tz_find.timezone_at(lat=float(latitude), lng=float(longitude)))
+        date_from_local = _datetime_to_tz(date_from, tz_in_location)
+        date_to_local = _datetime_to_tz(date_to, tz_in_location)
+        g_ts_ini_utc = _datetime_dt_to_ts_utc(date_from_local)
+        g_ts_end_utc = _datetime_dt_to_ts_utc(date_to_local)
+        key_mapping = {"latitude": 0, "longitude": 1, "forecasting_timestamp": 2, "timestamp": 3}
+        data = self._get_from_hbase(latitude, longitude, g_ts_ini_utc, g_ts_end_utc,
+                                    self.hbase_table_forecasting)
+        data.forecasting_timestamp = _pandas_ts_to_dt(data.forecasting_timestamp, tz_in_location)
+        data.timestamp = _pandas_ts_to_dt(data.timestamp, tz_in_location)
+        return data
+
     def get_historical_data(self, latitude, longitude, date_from, date_to):
         """
-        Gets forecast data from source
+        Gets historical data from source
 
         :param latitude: station's latitude
         :param longitude: station's longitude
@@ -62,7 +124,11 @@ class Source:
         longitude = format(longitude, '.3f')
 
         # get data from hbase, the date end must be fully included
-        data = self._get_from_hbase(latitude, longitude, g_ts_ini_utc, g_ts_end_utc + 86400)
+        key_mapping = {"latitude": 0, "longitude": 1, "ts": 2}
+        data = self._get_from_hbase(latitude, longitude, g_ts_ini_utc, g_ts_end_utc + 86400,
+                                    key_mapping, self.hbase_table_historical)
+        if not data.empty:
+            data['ts'] = data['ts'].astype(int)
         key_cols = ["latitude", "longitude", "ts"]
         data = data.set_index(key_cols)[
             sorted(data.columns[~data.columns.isin(key_cols)])
@@ -87,7 +153,7 @@ class Source:
         if gaps:
             missing_data = self._get_historical_data_source(latitude, longitude, gaps, tz_in_location)
             missing_data = missing_data.query("ts <= {}".format(_datetime_dt_to_ts_utc(now))).sort_values(by=["ts"])
-            save_to_hbase(missing_data.to_dict(orient="records"), self.hbase_table,
+            save_to_hbase(missing_data.to_dict(orient="records"), self.hbase_table_historical,
                           self.config['hbase_weather_data'], [("info", "all")],
                           row_fields=["latitude", "longitude", "ts"])
             data = pd.concat([data, missing_data]) if not data.empty else missing_data
@@ -98,7 +164,7 @@ class Source:
         data.ts = _pandas_ts_to_dt(data.ts, tz_in_location)
         return data
 
-    def _get_from_hbase(self, latitude, longitude, ts_ini, ts_end):
+    def _get_from_hbase(self, latitude, longitude, ts_ini, ts_end, key_mapping, hbase_table):
         """
         Gets all raw data from HBase for a given day
 
@@ -110,7 +176,7 @@ class Source:
         """
         measures = []
         try:
-            for data_tmp in get_hbase_data_batch(self.config['hbase_weather_data'], self.hbase_table, columns=["info"],
+            for data_tmp in get_hbase_data_batch(self.config['hbase_weather_data'], hbase_table, columns=["info"],
                                                  row_start="%s~%s~%d" % (latitude, longitude, ts_ini),
                                                  row_stop="%s~%s~%d" % (latitude, longitude, ts_end)):
                 for row_key, data in data_tmp:
@@ -118,26 +184,9 @@ class Source:
                     for key, n_key in \
                             zip(data.keys(), [key.decode("utf-8").replace("info:", "") for key in data.keys()]):
                         new_data[n_key] = new_data.pop(key).decode("utf-8")
-                    new_data["latitude"] = latitude
-                    new_data["longitude"] = longitude
-                    new_data["ts"] = int(row_key.decode("UTF-8").split("~")[2])
+                    for k, v in key_mapping.items():
+                        new_data[k] = row_key.decode("UTF-8").split("~")[v]
                     measures.append(new_data)
             return pd.DataFrame(measures)
         except Exception as e:
             return pd.DataFrame({})
-
-    def save(self, data, hbase_table):
-        """
-        Save source raw data to HBase
-
-        :param data: source raw data
-        :param hbase_table: HBase table for source
-        :return:
-        """
-        table = self.hbase.get_table(hbase_table, {"info": {}})
-        self.hbase.save(
-            table,
-            data.to_dict("records"),
-            [("info", "all")],
-            row_fields=["latitude", "longitude", "ts"],
-        )

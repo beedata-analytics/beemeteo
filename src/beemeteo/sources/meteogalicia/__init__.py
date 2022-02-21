@@ -11,10 +11,21 @@ from beemeteo.utils import _pandas_dt_to_ts_utc, _pandas_to_tz
 
 
 class MeteoGalicia(Source):
-    hbase_table = "meteo_galicia_historical"
+    hbase_table_historical = "meteo_galicia_historical"
+    hbase_table_forecasting = "meteo_galicia_forecasting"
 
     def __init__(self, config):
         super(MeteoGalicia, self).__init__(config)
+
+    def _collect_forecasting(self, latitude, longitude, now, local_tz):
+        now_timestamp = int(now.astimezone(pytz.UTC).timestamp())
+        forecasted_data = self._get_historic_data_day(latitude, longitude, now, local_tz)
+        forecasted_data.rename({"ts": "timestamp"}, axis=1, inplace=True)
+        forecasted_data["latitude"] = latitude
+        forecasted_data['longitude'] = longitude
+        forecasted_data['forecasting_timestamp'] = now_timestamp
+        forecasted_data = forecasted_data.query("timestamp >= {}".format(now_timestamp))
+        return forecasted_data
 
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
         missing_data = pd.DataFrame()

@@ -15,7 +15,8 @@ SODA_SERVER_MIRROR_SERVICE = "http://pro.soda-is.com/service/wps"
 
 
 class CAMS(Source):
-    hbase_table = "cams_historical"
+    hbase_table_historical = "cams_historical"
+    hbase_table_forecasting = None
 
     def __init__(self, config):
         super(CAMS, self).__init__(config)
@@ -23,6 +24,12 @@ class CAMS(Source):
             "registered_emails"
         ]
         assert len(self.cams_registered_mails) > 0
+
+    def _collect_forecasting(self, latitude, longitude, now, tz_local):
+        raise NotImplementedError("CAMS can't get forecasting")
+
+    def get_forecasting_data(self, latitude, longitude, date_from, date_to):
+        raise NotImplementedError("CAMS can't get forecasting")
 
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
         # In cams, we can download as many data as we want, but we have limited number of requests. So, if we detect

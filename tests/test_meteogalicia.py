@@ -1,12 +1,12 @@
 import datetime
 
 import pandas as pd
-
-from src.beemeteo import MeteoGalicia
+import json
+from beemeteo.sources.meteogalicia import MeteoGalicia
 
 
 def test_meteogalicia():
-    source = MeteoGalicia("config.json")
+    source = MeteoGalicia(json.load(open("config.json")))
     data = source.get_historical_data(
         latitude=41.29,
         longitude=2.19,

@@ -1,12 +1,12 @@
 import datetime
-
 import pandas as pd
+import json
 
-from src.beemeteo import DarkSky
+from beemeteo.sources.darksky import DarkSky
 
 
 def test_darksky():
-    source = DarkSky("config.json")
+    source = DarkSky(json.load(open("config.json")))
     data = source.get_historical_data(
         latitude=-30.3183,
         longitude=131.8894413,
@@ -22,4 +22,7 @@ def test_darksky():
         "windGust",
         "windSpeed",
     ]
+
+    source.collect_forecasting(41.6100308, 0.6307409)
+    x = source.get_forecasting_data(41.6100308, 0.6307409, datetime.datetime(2022, 1, 1), datetime.datetime(2022, 3, 1))
     #assert_frame_equal(data[columns_to_compare], expected[columns_to_compare])
