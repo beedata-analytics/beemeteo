@@ -43,9 +43,29 @@ If the passed datetime contains a timezone (not naive). The date will be transla
 
 To use the command line, the python package must be installed in the python environment of your computer. 
 
-The execution of the command line program will generate a CSV file with the specified name in the "file" parameter
+The command line has 3 different applications get data: historical data and forecasting data, and collect_forecasting
+
 ```console
-$ python -m beemeteo --help
+python3 -m beemeteo --help
+
+usage: __main__.py [-h] {historical,forecasting,collect_forecasting} ...
+
+positional arguments:
+  {historical,forecasting,collect_forecasting}
+                        The type of data to collect
+    historical          get historical data
+    forecasting         get forecasting data
+    collect_forecasting
+                        collect forecasting data for now
+
+optional arguments:
+  -h, --help            show this help message and exit
+
+```
+
+Both the execution of the command line program for get forecasting or historical data, will generate a CSV file with the specified name in the "file" parameter
+```console
+$ python3 -m beemeteo historical/forecasting --help
 
 usage: __main__.py [-h] -s SOURCE -c CONFIG -lat LATITUDE -lon LONGITUDE -d1 DATE_FROM -d2 DATE_TO -f FILE
 
@@ -65,15 +85,38 @@ optional arguments:
                         The date to get weather to (included)
   -f FILE, --file FILE  The file to store the data
 
-Example: python -m beemeteo \
---name DarkSky \
---filename config.json \
---latitude 41.29 \
---longitude 2.19 \
---date-from 2021-09-01 \
---date-to 2021-09-05
---file data_file.csv
+Example: python3 -m beemeteo \
+  historical -s DarkSky \
+  -c config.json -lat 41.29 -lon 2.19 -d1 2021-09-01 
+  -d2 2021-09-05 --f data_file.csv
 ```
+The collect forecasting will not return any information, but is used to populate the forecasting data with the current hour.
+
+```console
+python3 -m beemeteo collect_forecasting --help
+
+usage: __main__.py collect_forecasting [-h] -s {DarkSky,CAMS,MeteoGalicia} -c
+                                       CONFIG -lat LATITUDE -lon LONGITUDE
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -s {DarkSky,CAMS,MeteoGalicia}, --source {DarkSky,CAMS,MeteoGalicia}
+                        The source to get data from
+  -c CONFIG, --config CONFIG
+                        The configuration file path
+  -lat LATITUDE, --latitude LATITUDE
+                        The latitude
+  -lon LONGITUDE, --longitude LONGITUDE
+                        The longitude
+Example: python3 -m beemeteo \
+collect_forecasting \
+-s DarkSky \
+-c config.json \
+-lat 41.29 \
+-lon 2.19 
+
+```
+
 
 ### python package
 To use the package in python, you have to import the different data_sources, and use the functions to use them
@@ -87,7 +130,7 @@ import pytz
 from beemeteo.sources.cams import CAMS
 
 source = CAMS("config.json")
-source.get_data(
+source.get_historical_data(
     41.29,
     2.19,
     datetime.datetime(2021, 9, 1),
@@ -106,11 +149,21 @@ import pytz
 from beemeteo.sources.darksky import DarkSky
 
 source = DarkSky("config.json")
-source.get_data(
+source.get_historical_data(
     41.29,
     2.19,
     datetime.datetime(2021, 9, 1),
     datetime.datetime(2021, 9, 5),
+)
+source.get_forecasting_data(
+    41.29,
+    2.19,
+    datetime.datetime(2021, 9, 1),
+    datetime.datetime(2021, 9, 5),
+)
+source.collect_forecasting(
+    41.29,
+    2.19,
 )
 ```
 
@@ -121,10 +174,20 @@ import datetime
 import pytz
 from beemeteo.sources.meteogalicia import MeteoGalicia
 source = MeteoGalicia("config.json")
-source.get_data(
+source.get_historical_data(
     41.29,
     2.19,
     datetime.datetime(2021, 9, 1),
     datetime.datetime(2021, 9, 5),
+)
+source.get_forecasting_data(
+    41.29,
+    2.19,
+    datetime.datetime(2021, 9, 1),
+    datetime.datetime(2021, 9, 5),
+)
+source.collect_forecasting(
+    41.29,
+    2.19,
 )
 ```
