@@ -91,7 +91,7 @@ class Source:
         g_ts_end_utc = _datetime_dt_to_ts_utc(date_to_local)
         key_mapping = {"latitude": 0, "longitude": 1, "forecasting_timestamp": 2, "timestamp": 3}
         data = self._get_from_hbase(latitude, longitude, g_ts_ini_utc, g_ts_end_utc,
-                                    self.hbase_table_forecasting)
+                                    key_mapping, self.hbase_table_forecasting)
         data.forecasting_timestamp = _pandas_ts_to_dt(data.forecasting_timestamp, tz_in_location)
         data.timestamp = _pandas_ts_to_dt(data.timestamp, tz_in_location)
         return data
