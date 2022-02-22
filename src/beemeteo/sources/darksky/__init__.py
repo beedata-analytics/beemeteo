@@ -76,7 +76,8 @@ class DarkSky(Source):
             d = item.d
             hourly.append(d)
         data = pd.DataFrame(hourly)
-
-        data["ts"] = data["time"]
-        data.drop(["time"], axis=1, inplace=True)
+        if not data.empty:
+            data["ts"] = data["time"]
+            data.drop(["time"], axis=1, inplace=True)
         return data
+
