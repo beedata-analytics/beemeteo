@@ -152,16 +152,18 @@ class Source:
             data = data.drop('ts2_py', axis=1)
         if gaps:
             missing_data = self._get_historical_data_source(latitude, longitude, gaps, tz_in_location)
-            missing_data = missing_data.query("ts <= {}".format(_datetime_dt_to_ts_utc(now))).sort_values(by=["ts"])
-            save_to_hbase(missing_data.to_dict(orient="records"), self.hbase_table_historical,
-                          self.config['hbase_weather_data'], [("info", "all")],
-                          row_fields=["latitude", "longitude", "ts"])
+            if not missing_data.empty:
+                missing_data = missing_data.query("ts <= {}".format(_datetime_dt_to_ts_utc(now))).sort_values(by=["ts"])
+                save_to_hbase(missing_data.to_dict(orient="records"), self.hbase_table_historical,
+                              self.config['hbase_weather_data'], [("info", "all")],
+                              row_fields=["latitude", "longitude", "ts"])
             data = pd.concat([data, missing_data]) if not data.empty else missing_data
-        data = data.query("ts >= {} and ts <= {}".format(g_ts_ini_utc,
-                                                         min(_datetime_dt_to_ts_utc(now),
-                                                             g_ts_end_utc + 82800))).sort_values(by=["ts"])
-        data.drop_duplicates(subset=['latitude', 'longitude', 'ts'], inplace=True)
-        data.ts = _pandas_ts_to_dt(data.ts, tz_in_location)
+        if not data.empty:
+            data = data.query("ts >= {} and ts <= {}".format(g_ts_ini_utc,
+                                                             min(_datetime_dt_to_ts_utc(now),
+                                                                 g_ts_end_utc + 82800))).sort_values(by=["ts"])
+            data.drop_duplicates(subset=['latitude', 'longitude', 'ts'], inplace=True)
+            data.ts = _pandas_ts_to_dt(data.ts, tz_in_location)
         return data
 
     def _get_from_hbase(self, latitude, longitude, ts_ini, ts_end, key_mapping, hbase_table):

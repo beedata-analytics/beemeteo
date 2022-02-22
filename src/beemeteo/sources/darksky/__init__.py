@@ -42,6 +42,8 @@ class DarkSky(Source):
                 daily_data = self._get_data_day(latitude, longitude, day, local_tz)
                 data_period = pd.concat([data_period, daily_data])
             missing_data = pd.concat([missing_data, data_period])
+        if missing_data.empty:
+            return missing_data
         missing_data = missing_data.sort_values(by=["ts"])
         missing_data['latitude'] = latitude
         missing_data['longitude'] = longitude
