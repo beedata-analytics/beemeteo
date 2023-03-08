@@ -26,7 +26,7 @@ A python package and command line tool to download weather data from different s
 To install the package, use pip and the Git repository at the newest version
 
 ```bash
-pip install https://github.com/BeeGroup-cimne/beemeteo@v0.2.0
+pip install git+https://github.com/BeeGroup-cimne/beemeteo@v0.2.1
 ```
 ## Usage
 The application can be used as a command line or imported in a python package.
