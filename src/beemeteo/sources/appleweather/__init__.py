@@ -40,16 +40,15 @@ class AppleWeather(Source):
         service,
         day_from = ,
         day_to = ,
-        hour_from = ,
-        hour_to = ):
+    ):
 
         headers = {'Authorization': 'Bearer {}'.format(TOKEN)}
         payload = {
             "dataSets" = service,
         "dailyStart" =,  #
         "dailyEnd" =,
-        "hourlyStart" =,  # If this parameter is absent, hourly forecasts start on the current hour
-        "hourlyEnd" =,  # If this parameter is absent, hourly forecasts run 24 hours or the length of the daily forecast, whichever is longer
+        "hourlyStart" = 00:00,  # If this parameter is absent, hourly forecasts start on the current hour
+        "hourlyEnd" = 23:59,  # If this parameter is absent, hourly forecasts run 24 hours or the length of the daily forecast, whichever is longer
         "timezone" =,
         }
 
