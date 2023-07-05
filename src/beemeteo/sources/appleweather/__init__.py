@@ -1,65 +1,131 @@
-import datetime
 import requests
-import pandas as pd
-import pytz
 import json
-
-from beemeteo.sources import Source, logger
-
-# curl
-
-# htps://weatherkit.apple.com/api/v1/ + weather/en_US/ + _latitude + _longitude + ?dataSets= +
-# ["currentWeather","forecastDaily","forecastHourly","forecastNextHour","weatherAlerts"]
-
-# -H 'Authorization: Bearer TOKEN'
+import datetime
+import pytz
+from timezonefinder import TimezoneFinder
+import pandas as pd
+from beemeteo.utils import _local_to_UTC, _UTC_to_local, _datetime_to_api_format, _api_format_to_datetime 
 
 class AppleWeather(Source):
-    requests.get()
-    hbase_table_historical = "appleweather_historical"
-    hbase_table_forecasting = "appleweather_forecasting"
+    hbase_table_historical = "apple_historical"
+    hbase_table_forecasting = "apple_forecasting"
+
+    WEATHER = 'https://weatherkit.apple.com/api/v1/weather/en_US/'
 
     def __init__(self, config):
         super(AppleWeather, self).__init__(config)
-        self.api_key = self.config["A"][]
+        self.api_key = self.config["AppleWeather"]["Token"]
 
-    # returning to main
-    def _collect_forecasting(self, latitude, longitude):
-        return forecasting
+    def _get_historical_data():
+        # https://developer.apple.com/forums/thread/708727
+        raise NotImplementedError("AppleWeather can't get historical data")
+    
+    def _collect_forecasting(latitude, longitude, now, local_tz):
+        # Dates are ignored
+        df = self._request_server(latitude, longitude, "currentWeather", now, now, local_tz)
+        df.rename(columns = {'asOf':'ts'}, inplace = True)
+        return self._to_DarkSky_format(df, latitude, longitude)
 
-    # returning to main
-    def _get_historical_data(self, latitude, longitude, gaps, local_tz):
-        return missing_data
+    def _get_historical_data_source(latitude, longitude, gaps, local_tz):
+        # Apple Weather will return hourly dta in UTC time.
+        # https://developer.apple.com/forums/thread/722722
+        missing_data= pd.DataFrame()
+        for ts_ini, ts_end in gaps:
+            data_period = self._request_server(latitude, longitude, "forecastHourly", ts_ini, ts_end, local_tz)
+            missing_data = pd.concat([missing_data, data_period])
+        missing_data.rename(columns = {'forecastStart':'ts'}, inplace = True)
+        return self._to_DarkSky_format(missing_data, latitude, longitude)
 
-    # returning to main
-    def _get_forecasting_data(self, latitude, longitude, date_from, date_to):
-
-    # aux functions under
     def _request_server(
-        lat,
-        long,git
-        service,
-        day_from = ,
-        day_to = ,
-    ):
-
-        headers = {'Authorization': 'Bearer {}'.format(TOKEN)}
+            lat, 
+            long, 
+            service,
+            day_from,
+            day_to,
+            local_tz
+            ):
+  
+        day_from = _local_to_UTC(day_from, local_tz)
+        day_to = _local_to_UTC(day_to, local_tz)
+        if(day_from < datetime.datetime.fromisoformat('2021-08-01').astimezone(datetime.timezone.utc)):
+            raise NotImplementedError("Apple Weather Kit's historical data is currently available back to Aug 1, 2021.")
+    
+        url = WEATHER + str(lat) +'/'+ str(long)
+        config = json.load(open('config.json'))
+        headers = {'Authorization': 'Bearer {}'.format(config['apple_weather']['TOKEN'])}
+    
         payload = {
-            "dataSets" = service,
-        "dailyStart" =,  #
-        "dailyEnd" =,
-        "hourlyStart" = 00:00,  # If this parameter is absent, hourly forecasts start on the current hour
-        "hourlyEnd" = 23:59,  # If this parameter is absent, hourly forecasts run 24 hours or the length of the daily forecast, whichever is longer
-        "timezone" =,
-        }
+                "dataSets" : service,
+                "hourlyStart" : day_from, 
+                "hourlyEnd" : day_to,
+                "timezone": local_tz,
+                }
 
-        response = requests.get(url, headers=headers, params=payload)
-        if response.status_code != 200:
-            raise Exception
-        return self._parse_request(response.text)
+        data_list = []
+        if service=="currentWeather":
+            day_aux = day_to
+        else: 
+            day_aux = day_from
+        day_to += datetime.timedelta(days=1) # To include up to 23:59 we must set the end date to the follwing day, 00:00
+
+        while((day_to - day_aux).days > 9): # Send requests of max 10 days
+            payload["hourlyStart"] = _datetime_to_api_format(day_aux) 
+            day_aux += datetime.timedelta(days=10)
+            payload["hourlyEnd"] = _datetime_to_api_format(day_aux) 
+            response = requests.get(url, headers = headers, params = payload)
+            if response.status_code != 200:
+                raise Exception
+            if not json.loads(response.text):
+                raise NotImplementedError("Response for this request is empty")
+
+            data_list += self._parse_request(response.text)
+  
+        if((day_to - day_aux).days >= 1):
+            payload["hourlyStart"] = _datetime_to_api_format(day_aux)
+            payload["hourlyEnd"] = _datetime_to_api_format(day_to)
+            response = requests.get(url, headers = headers, params = payload)
+            if response.status_code != 200:
+                raise Exception
+            if not json.loads(response.text):
+                raise NotImplementedError("Response for this request is empty")
+        
+            data_list += self._parse_request(response.text)
+
+        for d in data_list:
+            d.update((k, _api_format_to_datetime(v)) for k, v in d.items() if (k == 'forecastStart' or k == 'asOf'))
+            d.update((k, _UTC_to_local(v, local_tz)) for k, v in d.items() if (k == "forecastStart" or k =='asOf'))
+
+
+        return pd.DataFrame.from_records(data_list)
 
     @staticmethod
     def _parse_request(response):
-        """Parse the request output into a pandas DataFrame.
-        :param response: api response
-        :return: dataframe
         """
+        Parse the request output into a pandas DataFrame.
+        :param response: api response in txt format
+        :return: python list
+        """
+    
+        data = json.loads(response)
+        service = next(iter(data))
+        data = data[service]
+        del data['name'], data['metadata']
+        return(
+                data['hours']
+                if(service != 'currentWeather')
+                else [data]
+                )
+
+    @staticmethod
+    def _to_DarkSky_format(data, latitude, longitude):
+        if data.empty:
+            return data
+        data = data.sort_values(by=["ts"])
+        data['latitude'] = latitude
+        data['longitude'] = longitude
+        data.drop_duplicates(subset=['latitude', 'longitude', 'ts'], inplace=True)
+        key_cols = ["latitude", "longitude", "ts"]
+        data = data.set_index(key_cols)[
+            sorted(data.columns[~data.columns.isin(key_cols)])
+        ].reset_index() if not data.empty else data
+        return data
