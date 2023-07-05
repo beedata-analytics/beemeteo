@@ -47,6 +47,18 @@ def _datetime_dt_to_ts_utc(dt):
     return int((_datetime_to_tz(dt, pytz.UTC) - datetime.datetime(1970, 1, 1, tzinfo=pytz.UTC)) /
                datetime.timedelta(seconds=1))
 
+def _local_to_UTC(date, local_tz):
+    return local_tz.localize(date).astimezone(datetime.timezone.utc)
+
+def _UTC_to_local(date, local_tz):
+    return pytz.UTC.localize(date).astimezone(local_tz)
+
+def _datetime_to_api_format(date):
+    return date.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def _api_format_to_datetime(date_str):
+    return datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
+
 
 def read_config(config):
     return config
