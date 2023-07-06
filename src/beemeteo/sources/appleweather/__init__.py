@@ -2,9 +2,9 @@ import requests
 import json
 import datetime
 import pytz
-from timezonefinder import TimezoneFinder
 import pandas as pd
 from beemeteo.utils import _local_to_UTC, _UTC_to_local, _datetime_to_api_format, _api_format_to_datetime 
+from beemeteo.sources import Source, logger
 
 class AppleWeather(Source):
     hbase_table_historical = "apple_historical"
@@ -93,8 +93,7 @@ class AppleWeather(Source):
 
         for d in data_list:
             d.update((k, _api_format_to_datetime(v)) for k, v in d.items() if (k == 'forecastStart' or k == 'asOf'))
-            d.update((k, _UTC_to_local(v, local_tz)) for k, v in d.items() if (k == "forecastStart" or k =='asOf'))
-
+            d.update((k, _UTC_to_local(v, local_tz)) for k, v in d.items() if (k == 'forecastStart' or k =='asOf'))
 
         return pd.DataFrame.from_records(data_list)
 
@@ -118,6 +117,13 @@ class AppleWeather(Source):
 
     @staticmethod
     def _to_DarkSky_format(data, latitude, longitude):
+        """
+        Adapt retrieved data to DarkSky frame
+        :data: Pandas dataframe after prasing
+        :latitude: Latitude of retrieved location (not string)
+        :longitude: Longitude of retrieved location (not string)
+        """
+
         if data.empty:
             return data
         data = data.sort_values(by=["ts"])
