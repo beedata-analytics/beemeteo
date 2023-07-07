@@ -3,14 +3,13 @@ import json
 import datetime
 import pytz
 import pandas as pd
+
 from beemeteo.utils import _local_to_UTC, _UTC_to_local, _datetime_to_api_format, _api_format_to_datetime 
 from beemeteo.sources import Source, logger
 
 class AppleWeather(Source):
     hbase_table_historical = "apple_historical"
     hbase_table_forecasting = "apple_forecasting"
-
-    WEATHER = 'https://weatherkit.apple.com/api/v1/weather/en_US/'
 
     def __init__(self, config):
         super(AppleWeather, self).__init__(config)
@@ -24,7 +23,11 @@ class AppleWeather(Source):
         # Dates are ignored
         df = self._request_server(latitude, longitude, "currentWeather", now, now, local_tz)
         df.rename(columns = {'asOf':'ts'}, inplace = True)
-        return self._to_DarkSky_format(df, latitude, longitude)
+        df = self._to_DarkSky_format(df, latitude, longitude)
+        now = pytz.UTC.localize(datetime.datetime.utcnow()).astimezone(local_tz)
+        df["timestamp"] = [datetime.datetime.timestamp(now)]
+        df.rename(columns = {'ts':'forecasting_timestamp'}, inplace = True)
+        return df 
 
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
         # Apple Weather will return hourly dta in UTC time.
@@ -46,6 +49,7 @@ class AppleWeather(Source):
             local_tz
             ):
   
+        WEATHER = 'https://weatherkit.apple.com/api/v1/weather/en_US/'
         day_from = _local_to_UTC(day_from, local_tz)
         day_to = _local_to_UTC(day_to, local_tz)
         if(day_from < datetime.datetime.fromisoformat('2021-08-01').astimezone(datetime.timezone.utc)):
@@ -53,7 +57,7 @@ class AppleWeather(Source):
     
         url = WEATHER + str(lat) +'/'+ str(long)
         config = json.load(open('config.json'))
-        headers = {'Authorization': 'Bearer {}'.format(config['apple_weather']['TOKEN'])}
+        headers = {'Authorization': 'Bearer {}'.format(config['AppleWeather']['Token'])}
     
         payload = {
                 "dataSets" : service,
@@ -124,7 +128,6 @@ class AppleWeather(Source):
         :latitude: Latitude of retrieved location (not string)
         :longitude: Longitude of retrieved location (not string)
         """
-
 
         if data.empty:
             return data
