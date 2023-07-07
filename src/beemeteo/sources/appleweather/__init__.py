@@ -16,17 +16,17 @@ class AppleWeather(Source):
         super(AppleWeather, self).__init__(config)
         self.api_key = self.config["AppleWeather"]["Token"]
 
-    def _get_historical_data():
+    def _get_historical_data(self):
         # https://developer.apple.com/forums/thread/708727
         raise NotImplementedError("AppleWeather can't get historical data")
     
-    def _collect_forecasting(latitude, longitude, now, local_tz):
+    def _collect_forecasting(self, latitude, longitude, now, local_tz):
         # Dates are ignored
         df = self._request_server(latitude, longitude, "currentWeather", now, now, local_tz)
         df.rename(columns = {'asOf':'ts'}, inplace = True)
         return self._to_DarkSky_format(df, latitude, longitude)
 
-    def _get_historical_data_source(latitude, longitude, gaps, local_tz):
+    def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
         # Apple Weather will return hourly dta in UTC time.
         # https://developer.apple.com/forums/thread/722722
         missing_data= pd.DataFrame()
@@ -37,6 +37,7 @@ class AppleWeather(Source):
         return self._to_DarkSky_format(missing_data, latitude, longitude)
 
     def _request_server(
+            self,
             lat, 
             long, 
             service,
@@ -123,6 +124,7 @@ class AppleWeather(Source):
         :latitude: Latitude of retrieved location (not string)
         :longitude: Longitude of retrieved location (not string)
         """
+
 
         if data.empty:
             return data
