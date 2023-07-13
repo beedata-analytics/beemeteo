@@ -15,29 +15,27 @@ class AppleWeather(Source):
         super(AppleWeather, self).__init__(config)
         self.api_key = self.config["AppleWeather"]["Token"]
 
-    def _get_historical_data(self):
-        # https://developer.apple.com/forums/thread/708727
-        raise NotImplementedError("AppleWeather can't get historical data")
-    
     def _collect_forecasting(self, latitude, longitude, now, local_tz):
-        # Dates are ignored
         df = self._request_server(latitude, longitude, "currentWeather", now, now, local_tz)
         df.rename(columns = {'asOf':'ts'}, inplace = True)
         df = self._to_DarkSky_format(df, latitude, longitude)
-        now = pytz.UTC.localize(datetime.datetime.utcnow()).astimezone(local_tz)
-        df["timestamp"] = [datetime.datetime.timestamp(now)]
-        df.rename(columns = {'ts':'forecasting_timestamp'}, inplace = True)
+        df["forecasting_timestamp"] = int(now.astimezone(pytz.UTC).timestamp())
+        df.rename(columns = {'ts':'timestamp'}, inplace = True)
+        df.replace(df['timestamp'][0], int(datetime.datetime.timestamp(df['timestamp'][    0])), inplace=True)
         return df 
 
     def _get_historical_data_source(self, latitude, longitude, gaps, local_tz):
-        # Apple Weather will return hourly dta in UTC time.
+        # Apple Weather will return hourly data in UTC time.
         # https://developer.apple.com/forums/thread/722722
-        missing_data= pd.DataFrame()
+        df = pd.DataFrame()                                                                                            
         for ts_ini, ts_end in gaps:
             data_period = self._request_server(latitude, longitude, "forecastHourly", ts_ini, ts_end, local_tz)
-            missing_data = pd.concat([missing_data, data_period])
-        missing_data.rename(columns = {'forecastStart':'ts'}, inplace = True)
-        return self._to_DarkSky_format(missing_data, latitude, longitude)
+            df = pd.concat([df, data_period])
+        df.rename(columns = {'forecastStart':'ts'}, inplace = True)
+        df = self._to_DarkSky_format(df, latitude, longitude)
+        for element in df['ts']:
+            df.replace(element, int(datetime.datetime.timestamp(element)), inplace = True)
+        return df 
 
     def _request_server(
             self,
