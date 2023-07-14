@@ -4,6 +4,7 @@ import logging
 from beemeteo.sources.cams import CAMS
 from beemeteo.sources.darksky import DarkSky
 from beemeteo.sources.meteogalicia import MeteoGalicia
+from beemeteo.sources.appleweather import AppleWeather
 import argparse
 
 logging.basicConfig(level=logging.INFO)
@@ -13,6 +14,7 @@ sources = {
     "CAMS": CAMS,
     "DarkSky": DarkSky,
     "MeteoGalicia": MeteoGalicia,
+    "AppleWeather": AppleWeather,
 }
 
 
