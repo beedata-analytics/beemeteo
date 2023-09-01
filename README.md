@@ -16,8 +16,11 @@ A python package and command line tool to download weather data from different s
 - [CAMS Radiation Service](http://www.soda-pro.com/web-services/radiation/cams-radiation-service/info) (CAMS)
   - Provides Europe and Africa historical solar radiation data ![OK](https://img.shields.io/badge/-OK-green)
 - [Dark Sky API](https://darksky.net/dev) (DarkSky)
+  - Provides worldwide historical meteorological data ![OK](https://img.shields.io/badge/-deprecated-red)
+  - Provides worldwide prediction meteorological data ![NO](https://img.shields.io/badge/-deprecated-red)
+- [Apple Weather kit"](https://developer.apple.com/weatherkit/) (AppleWeatherKit)
   - Provides worldwide historical meteorological data ![OK](https://img.shields.io/badge/-OK-green)
-  - Provides worldwide prediction meteorological data ![NO](https://img.shields.io/badge/-OK-green)
+  - Provides worldwide prediction meteorological data ![OK](https://img.shields.io/badge/-OK-green)
 - [MeteoGalicia](http://mandeo.meteogalicia.es) (MeteoGalicia)
   - Provides Europe historical solar radiation data ![OK](https://img.shields.io/badge/-OK-green)
   - Provides Europe prediction solar radiation data ![NO](https://img.shields.io/badge/-OK-green)
@@ -26,7 +29,26 @@ A python package and command line tool to download weather data from different s
 To install the package, use pip and the Git repository at the newest version
 
 ```bash
-pip install git+https://github.com/BeeGroup-cimne/beemeteo@v0.2.1
+pip install git+https://github.com/BeeGroup-cimne/beemeteo@v0.3.1
+```
+
+## Config file
+To use the tool, you will need a json configuration file as the following
+```json
+{
+  "cams":{
+    "registered_emails": ["list of registered e-mails"]
+  },
+  "dark_sky": {
+    "api_key": "api key to access darksky(deprecated)"
+  },
+  "hbase_weather_data": {
+    "host": "hbase host",
+    "port": 9090,
+    "table_prefix": "hbase namespace",
+    "table_prefix_separator": ":"
+  }
+}
 ```
 ## Usage
 The application can be used as a command line or imported in a python package.
@@ -72,7 +94,7 @@ usage: __main__.py [-h] -s SOURCE -c CONFIG -lat LATITUDE -lon LONGITUDE -d1 DAT
 optional arguments:
   -h, --help            show this help message and exit
   -s SOURCE, --source SOURCE
-                        The source to get data from one of [DarkSky, CAMS, MeteoGalicia]
+                        The source to get data from one of [AppleWeather, CAMS, MeteoGalicia]
   -c CONFIG, --config CONFIG
                         The configuration file path
   -lat LATITUDE, --latitude LATITUDE
@@ -86,7 +108,7 @@ optional arguments:
   -f FILE, --file FILE  The file to store the data
 
 Example: python3 -m beemeteo \
-  historical -s DarkSky \
+  historical -s AppleWeather \
   -c config.json -lat 41.29 -lon 2.19 -d1 2021-09-01 
   -d2 2021-09-05 --f data_file.csv
 ```
@@ -95,12 +117,12 @@ The collect forecasting will not return any information, but is used to populate
 ```console
 python3 -m beemeteo collect_forecasting --help
 
-usage: __main__.py collect_forecasting [-h] -s {DarkSky,CAMS,MeteoGalicia} -c
+usage: __main__.py collect_forecasting [-h] -s {AppleWeather,CAMS,MeteoGalicia} -c
                                        CONFIG -lat LATITUDE -lon LONGITUDE
 
 optional arguments:
   -h, --help            show this help message and exit
-  -s {DarkSky,CAMS,MeteoGalicia}, --source {DarkSky,CAMS,MeteoGalicia}
+  -s {AppleWeather,CAMS,MeteoGalicia}, --source {AppleWeather,CAMS,MeteoGalicia}
                         The source to get data from
   -c CONFIG, --config CONFIG
                         The configuration file path
@@ -110,7 +132,7 @@ optional arguments:
                         The longitude
 Example: python3 -m beemeteo \
 collect_forecasting \
--s DarkSky \
+-s AppleWeather \
 -c config.json \
 -lat 41.29 \
 -lon 2.19 
@@ -146,9 +168,9 @@ import os
 
 import pytz
 
-from beemeteo.sources.darksky import DarkSky
+from beemeteo.sources.appleweather import AppleWeather
 
-source = DarkSky("config.json")
+source = AppleWeather("config.json")
 source.get_historical_data(
     41.29,
     2.19,

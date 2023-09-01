@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     # historical command
     hist.add_argument("-s", "--source", required=True,
-                      help="The source to get data from", choices=["DarkSky", "CAMS", "MeteoGalicia"])
+                      help="The source to get data from", choices=["AppleWeather", "CAMS", "MeteoGalicia"])
     hist.add_argument("-c", "--config", help="The configuration file path", required=True)
     hist.add_argument("-lat", "--latitude", help="The latitude", required=True)
     hist.add_argument("-lon", "--longitude", required=True, help="The longitude")
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     hist.add_argument("-f", "--file", required=True, help="The file to store the data")
 
     fore.add_argument("-s", "--source", required=True,
-                      help="The source to get data from", choices=["DarkSky", "CAMS", "MeteoGalicia"])
+                      help="The source to get data from", choices=["AppleWeather", "CAMS", "MeteoGalicia"])
     fore.add_argument("-c", "--config", help="The configuration file path", required=True)
     fore.add_argument("-lat", "--latitude", help="The latitude", required=True)
     fore.add_argument("-lon", "--longitude", required=True, help="The longitude")
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     fore.add_argument("-f", "--file", required=True, help="The file to store the data")
 
     collect.add_argument("-s", "--source", required=True,
-                      help="The source to get data from", choices=["DarkSky", "CAMS", "MeteoGalicia"])
+                      help="The source to get data from", choices=["AppleWeather", "CAMS", "MeteoGalicia"])
     collect.add_argument("-c", "--config", help="The configuration file path", required=True)
     collect.add_argument("-lat", "--latitude", help="The latitude", required=True)
     collect.add_argument("-lon", "--longitude", required=True, help="The longitude")
